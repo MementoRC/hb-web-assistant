@@ -67,9 +67,6 @@ docs/site/
 # Git worktrees
 .worktrees/
 
-# Secrets baseline
-.secrets.baseline
-
 # Misc
 .DS_Store
 .env.local
