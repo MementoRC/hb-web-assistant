@@ -71,7 +71,7 @@ jobs:
         bandit -r web_assistant/ -f json -o bandit-report.json || true
 
     - name: Upload security reports
-      uses: actions/upload-artifact@v4
+      uses: actions/upload-artifact@v7
       if: always()
       with:
         name: security-reports
