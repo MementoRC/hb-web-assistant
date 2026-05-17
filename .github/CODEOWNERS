@@ -1,0 +1,6 @@
+# These owners will be the default owners for everything in the repo
+* @MementoRC
+
+# Ownership of specific directories or files
+/web_assistant/ @MementoRC
+/.github/ @MementoRC
