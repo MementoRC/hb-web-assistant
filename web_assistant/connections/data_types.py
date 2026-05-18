@@ -11,7 +11,25 @@ if TYPE_CHECKING:
 
     import aiohttp
 
-    from web_assistant.connections.ws_connection import WSConnection
+from web_assistant.connections.ws_data_types import (
+    WSBinaryRequest,
+    WSJSONRequest,
+    WSPlainTextRequest,
+    WSRequest,
+    WSResponse,
+)
+
+__all__ = [
+    "RESTMethod",
+    "RESTRequest",
+    "EndpointRESTRequest",
+    "RESTResponse",
+    "WSRequest",
+    "WSJSONRequest",
+    "WSPlainTextRequest",
+    "WSBinaryRequest",
+    "WSResponse",
+]
 
 
 class RESTMethod(Enum):
@@ -145,46 +163,3 @@ class RESTResponse:
             f"RESTResponse(url='{self.url}', method={self.method}, "
             f"status={self.status}, headers={self._aiohttp_response.headers})"
         )
-
-
-class WSRequest(ABC):
-    is_auth_required: bool = False
-
-    @abstractmethod
-    async def send_with_connection(self, connection: WSConnection) -> None:
-        raise NotImplementedError
-
-
-@dataclass
-class WSJSONRequest(WSRequest):
-    payload: Mapping[str, Any]
-    throttler_limit_id: str | None = None
-    is_auth_required: bool = False
-
-    async def send_with_connection(self, connection: WSConnection) -> None:
-        await connection._send_json(payload=self.payload)
-
-
-@dataclass
-class WSPlainTextRequest(WSRequest):
-    payload: str
-    throttler_limit_id: str | None = None
-    is_auth_required: bool = False
-
-    async def send_with_connection(self, connection: WSConnection) -> None:
-        await connection._send_plain_text(payload=self.payload)
-
-
-@dataclass
-class WSBinaryRequest(WSRequest):
-    payload: bytes
-    throttler_limit_id: str | None = None
-    is_auth_required: bool = False
-
-    async def send_with_connection(self, connection: WSConnection) -> None:
-        await connection._send_binary(payload=self.payload)
-
-
-@dataclass
-class WSResponse:
-    data: Any

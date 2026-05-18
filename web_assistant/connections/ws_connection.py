@@ -6,7 +6,7 @@ from typing import Any
 import aiohttp
 from aiohttp import WebSocketError, WSCloseCode
 
-from web_assistant.connections.data_types import WSRequest, WSResponse
+from web_assistant.connections.ws_data_types import WSRequest, WSResponse
 
 
 class WSConnection:
