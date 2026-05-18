@@ -9,9 +9,14 @@ if TYPE_CHECKING:
 
 
 class WSConnectionProtocol(Protocol):
-    async def _send_json(self, payload: Mapping[str, Any]) -> None: ...
-    async def _send_plain_text(self, payload: str) -> None: ...
-    async def _send_binary(self, payload: bytes) -> None: ...
+    async def _send_json(self, payload: Mapping[str, Any]) -> None:
+        raise NotImplementedError
+
+    async def _send_plain_text(self, payload: str) -> None:
+        raise NotImplementedError
+
+    async def _send_binary(self, payload: bytes) -> None:
+        raise NotImplementedError
 
 
 class WSRequest(ABC):
