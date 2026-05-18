@@ -1,3 +1,3 @@
-"""Throttler sub-package — placeholder for hummingbot.core.api_throttler relocation."""
+"""Throttler sub-package — token-bucket rate limiter (relocated from hummingbot.core.api_throttler)."""
 
 __all__: list[str] = []
