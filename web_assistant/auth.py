@@ -12,7 +12,9 @@ class AuthBase(ABC):
     """
 
     @abstractmethod
-    async def rest_authenticate(self, request: RESTRequest) -> RESTRequest: ...
+    async def rest_authenticate(self, request: RESTRequest) -> RESTRequest:
+        raise NotImplementedError
 
     @abstractmethod
-    async def ws_authenticate(self, request: WSRequest) -> WSRequest: ...
+    async def ws_authenticate(self, request: WSRequest) -> WSRequest:
+        raise NotImplementedError

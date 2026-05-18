@@ -1,14 +1,16 @@
+from __future__ import annotations
+
 import json
 from abc import ABC, abstractmethod
-from collections.abc import Mapping
 from dataclasses import dataclass
 from enum import Enum
-from json import JSONDecodeError
 from typing import TYPE_CHECKING, Any
 
-import aiohttp
-
 if TYPE_CHECKING:
+    from collections.abc import Mapping
+
+    import aiohttp
+
     from web_assistant.connections.ws_connection import WSConnection
 
 
@@ -56,7 +58,8 @@ class EndpointRESTRequest(RESTRequest, ABC):
 
     @property
     @abstractmethod
-    def base_url(self) -> str: ...
+    def base_url(self) -> str:
+        raise NotImplementedError
 
     def _ensure_url(self) -> None:
         if self.url is None and self.endpoint is None:
@@ -125,7 +128,7 @@ class RESTResponse:
                 decoded_string = byte_string.decode("utf-8")
                 try:
                     json_ = json.loads(decoded_string)
-                except JSONDecodeError:
+                except json.JSONDecodeError:
                     json_ = decoded_string
             else:
                 json_ = await self._aiohttp_response.json()
@@ -148,7 +151,8 @@ class WSRequest(ABC):
     is_auth_required: bool = False
 
     @abstractmethod
-    async def send_with_connection(self, connection: "WSConnection") -> None: ...
+    async def send_with_connection(self, connection: WSConnection) -> None:
+        raise NotImplementedError
 
 
 @dataclass
@@ -157,7 +161,7 @@ class WSJSONRequest(WSRequest):
     throttler_limit_id: str | None = None
     is_auth_required: bool = False
 
-    async def send_with_connection(self, connection: "WSConnection") -> None:
+    async def send_with_connection(self, connection: WSConnection) -> None:
         await connection._send_json(payload=self.payload)
 
 
@@ -167,7 +171,7 @@ class WSPlainTextRequest(WSRequest):
     throttler_limit_id: str | None = None
     is_auth_required: bool = False
 
-    async def send_with_connection(self, connection: "WSConnection") -> None:
+    async def send_with_connection(self, connection: WSConnection) -> None:
         await connection._send_plain_text(payload=self.payload)
 
 
@@ -177,7 +181,7 @@ class WSBinaryRequest(WSRequest):
     throttler_limit_id: str | None = None
     is_auth_required: bool = False
 
-    async def send_with_connection(self, connection: "WSConnection") -> None:
+    async def send_with_connection(self, connection: WSConnection) -> None:
         await connection._send_binary(payload=self.payload)
 
 

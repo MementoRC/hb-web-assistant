@@ -105,10 +105,6 @@ class AsyncThrottlerBase(ABC):
             if limit_weight_pair.limit_id in self._id_to_limit_map
         ]
 
-        # Append self as part of the related_limits
-        # if rate_limit is not None:
-        #     related_limits.append((rate_limit, rate_limit.weight))
-        #
         return rate_limit, related_limits
 
     @abstractmethod

@@ -2,7 +2,6 @@ import asyncio
 import functools
 import sys
 import unittest
-from asyncio import Task
 from collections.abc import Awaitable, Callable, Coroutine, Set
 from typing import Any
 
@@ -78,7 +77,7 @@ class IsolatedAsyncioWrapperTestCase(unittest.IsolatedAsyncioTestCase):
 
     @staticmethod
     async def await_task_completion(tasks_name: str | list[str] | None) -> None:
-        def get_coro_func_name(task: Task) -> str:
+        def get_coro_func_name(task: asyncio.Task) -> str:
             coro = task.get_coro()
             return coro.cr_code.co_name  # type: ignore[union-attr]
 
@@ -86,7 +85,7 @@ class IsolatedAsyncioWrapperTestCase(unittest.IsolatedAsyncioTestCase):
             return
         if isinstance(tasks_name, str):
             tasks_name = [tasks_name]
-        tasks: Set[Task] = asyncio.all_tasks()
+        tasks: Set[asyncio.Task] = asyncio.all_tasks()
         tasks = {
             task
             for task in tasks
