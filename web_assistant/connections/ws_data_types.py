@@ -2,19 +2,23 @@ from __future__ import annotations
 
 from abc import ABC, abstractmethod
 from dataclasses import dataclass
-from typing import TYPE_CHECKING, Any
+from typing import TYPE_CHECKING, Any, Protocol
 
 if TYPE_CHECKING:
     from collections.abc import Mapping
 
-    from web_assistant.connections.ws_connection import WSConnection
+
+class WSConnectionProtocol(Protocol):
+    async def _send_json(self, payload: Mapping[str, Any]) -> None: ...
+    async def _send_plain_text(self, payload: str) -> None: ...
+    async def _send_binary(self, payload: bytes) -> None: ...
 
 
 class WSRequest(ABC):
     is_auth_required: bool = False
 
     @abstractmethod
-    async def send_with_connection(self, connection: WSConnection) -> None:
+    async def send_with_connection(self, connection: WSConnectionProtocol) -> None:
         raise NotImplementedError
 
 
@@ -24,7 +28,7 @@ class WSJSONRequest(WSRequest):
     throttler_limit_id: str | None = None
     is_auth_required: bool = False
 
-    async def send_with_connection(self, connection: WSConnection) -> None:
+    async def send_with_connection(self, connection: WSConnectionProtocol) -> None:
         await connection._send_json(payload=self.payload)
 
 
@@ -34,7 +38,7 @@ class WSPlainTextRequest(WSRequest):
     throttler_limit_id: str | None = None
     is_auth_required: bool = False
 
-    async def send_with_connection(self, connection: WSConnection) -> None:
+    async def send_with_connection(self, connection: WSConnectionProtocol) -> None:
         await connection._send_plain_text(payload=self.payload)
 
 
@@ -44,7 +48,7 @@ class WSBinaryRequest(WSRequest):
     throttler_limit_id: str | None = None
     is_auth_required: bool = False
 
-    async def send_with_connection(self, connection: WSConnection) -> None:
+    async def send_with_connection(self, connection: WSConnectionProtocol) -> None:
         await connection._send_binary(payload=self.payload)
 
 
