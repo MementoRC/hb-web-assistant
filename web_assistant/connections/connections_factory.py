@@ -24,6 +24,18 @@ class ConnectionsFactory:
     _ws_independent_session: aiohttp.ClientSession | None = None
     _shared_client: aiohttp.ClientSession | None = None
 
+    @classmethod
+    def reset(cls) -> None:
+        """Drop the cached singleton and any class-level session refs.
+
+        Called automatically from :meth:`close` so the next :class:`ConnectionsFactory`
+        instantiation starts fresh. Exposed publicly so callers that only want to
+        recycle the singleton (without awaiting close) can do so synchronously.
+        """
+        cls._instance = None
+        cls._shared_client = None
+        cls._ws_independent_session = None
+
     def __new__(cls) -> ConnectionsFactory:
         if cls._instance is None:
             cls._instance = super().__new__(cls)
@@ -62,6 +74,7 @@ class ConnectionsFactory:
         if self._ws_independent_session is not None:
             await self._ws_independent_session.close()
             self._ws_independent_session = None
+        ConnectionsFactory.reset()
 
     async def __aenter__(self) -> ConnectionsFactory:
         """
