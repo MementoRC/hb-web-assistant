@@ -37,6 +37,7 @@ class ConnectionsFactory:
         cls._ws_independent_session = None
 
     def __new__(cls) -> ConnectionsFactory:
+        """Enforce singleton construction — all callers share the same instance."""
         if cls._instance is None:
             cls._instance = super().__new__(cls)
         return cls._instance

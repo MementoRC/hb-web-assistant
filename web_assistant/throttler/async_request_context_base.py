@@ -21,6 +21,7 @@ class AsyncRequestContextBase(ABC):
 
     @classmethod
     def logger(cls) -> logging.Logger:
+        """Return the module-level logger, creating it on first access."""
         global arc_logger
         if arc_logger is None:
             arc_logger = logging.getLogger(__name__)
@@ -65,9 +66,15 @@ class AsyncRequestContextBase(ABC):
 
     @abstractmethod
     def within_capacity(self) -> bool:
+        """Return True if the current task can proceed without exceeding any rate limit.
+
+        Implementations must evaluate all primary and linked limits against the
+        current task log before returning.
+        """
         raise NotImplementedError
 
     async def acquire(self) -> None:
+        """Block until capacity is available, then record this task in the shared log."""
         while True:
             async with self._lock:
                 self.flush()
@@ -90,6 +97,7 @@ class AsyncRequestContextBase(ABC):
             self._task_logs.extend(new_logs)
 
     async def __aenter__(self) -> "AsyncRequestContextBase":
+        """Acquire capacity before the guarded block executes."""
         await self.acquire()
         return self
 
@@ -99,4 +107,5 @@ class AsyncRequestContextBase(ABC):
         exc: BaseException | None,
         tb: Any,
     ) -> None:
+        """No-op exit; capacity is released by the time window expiring, not explicitly."""
         pass

@@ -12,4 +12,8 @@ class WSPreProcessorBase(abc.ABC):
 
     @abc.abstractmethod
     async def pre_process(self, request: WSRequest) -> WSRequest:
+        """Transform the WebSocket request before it is sent to the server.
+
+        Implementations must return the (potentially mutated) request object.
+        """
         raise NotImplementedError

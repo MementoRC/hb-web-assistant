@@ -12,4 +12,8 @@ class RESTPostProcessorBase(abc.ABC):
 
     @abc.abstractmethod
     async def post_process(self, response: RESTResponse) -> RESTResponse:
+        """Transform the response before it is returned to the caller.
+
+        Implementations must return the (potentially mutated) response object.
+        """
         raise NotImplementedError

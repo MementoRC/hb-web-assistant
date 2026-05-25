@@ -11,6 +11,8 @@ Seconds = float
 
 @dataclass
 class LinkedLimitWeightPair:
+    """Associates a secondary `RateLimit` (by ID) with a per-call weight contribution."""
+
     limit_id: str
     weight: int = DEFAULT_WEIGHT
 
@@ -50,6 +52,8 @@ class RateLimit:
 
 @dataclass
 class TaskLog:
+    """A record of a single API call, used to track capacity consumption within a time window."""
+
     timestamp: float
     rate_limit: RateLimit
     weight: int

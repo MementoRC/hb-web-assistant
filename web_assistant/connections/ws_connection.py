@@ -10,9 +10,12 @@ from web_assistant.connections.ws_data_types import WSRequest, WSResponse
 
 
 class WSConnection:
+    """Low-level WebSocket connection wrapping a single `aiohttp` WebSocket session."""
+
     _MAX_MSG_SIZE = 4 * 1024 * 1024  # default aiohttp: 4 * 1024 * 1024
 
     def __init__(self, aiohttp_client_session: aiohttp.ClientSession) -> None:
+        """Initialise the connection with an existing aiohttp client session."""
         self._client_session = aiohttp_client_session
         self._connection: aiohttp.ClientWebSocketResponse | None = None
         self._connected = False
@@ -21,10 +24,12 @@ class WSConnection:
 
     @property
     def last_recv_time(self) -> float:
+        """Unix timestamp of the last successfully received message."""
         return self._last_recv_time
 
     @property
     def connected(self) -> bool:
+        """True while the WebSocket handshake has completed and the connection is open."""
         return self._connected
 
     async def connect(
@@ -35,6 +40,10 @@ class WSConnection:
         ws_headers: dict[str, str] | None = None,
         max_msg_size: int | None = None,
     ) -> None:
+        """Open a WebSocket connection to the given URL.
+
+        Raises `RuntimeError` if already connected.
+        """
         self._ensure_not_connected()
         self._connection = await self._client_session.ws_connect(
             ws_url,
@@ -47,19 +56,31 @@ class WSConnection:
         self._connected = True
 
     async def disconnect(self) -> None:
+        """Close the WebSocket connection if it is currently open."""
         if self._connection is not None and not self._connection.closed:
             await self._connection.close()
         self._connection = None
         self._connected = False
 
     async def send(self, request: WSRequest) -> None:
+        """Dispatch a `WSRequest` through the open connection.
+
+        Raises `RuntimeError` if not connected.
+        """
         self._ensure_connected()
         await request.send_with_connection(connection=self)
 
     async def ping(self) -> None:
+        """Send a ping frame to keep the connection alive."""
         await self._connection.ping()  # type: ignore[union-attr]
 
     async def receive(self) -> WSResponse | None:
+        """Block until the next application-level message arrives and return it.
+
+        Returns `None` if the connection is closed while waiting.  Raises
+        `RuntimeError` if not connected, `TimeoutError` if `message_timeout` is
+        exceeded, or `ConnectionError` on unexpected close or oversized messages.
+        """
         self._ensure_connected()
         response: WSResponse | None = None
         while self._connected:

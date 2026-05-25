@@ -23,6 +23,7 @@ class WSAssistant:
         ws_post_processors: list[WSPostProcessorBase] | None = None,
         auth: AuthBase | None = None,
     ):
+        """Construct a WebSocket assistant wired to the given connection."""
         self._connection = connection
         self._ws_pre_processors = ws_pre_processors or []
         self._ws_post_processors = ws_post_processors or []
@@ -30,6 +31,7 @@ class WSAssistant:
 
     @property
     def last_recv_time(self) -> float:
+        """Unix timestamp of the last message received from the server."""
         return self._connection.last_recv_time
 
     async def connect(
@@ -41,6 +43,7 @@ class WSAssistant:
         ws_headers: dict[str, str] | None = None,
         max_msg_size: int | None = None,
     ) -> None:
+        """Open the WebSocket connection to the given URL."""
         max_msg_size = max_msg_size if max_msg_size else self._connection._MAX_MSG_SIZE
         await self._connection.connect(
             ws_url=ws_url,
@@ -51,6 +54,7 @@ class WSAssistant:
         )
 
     async def disconnect(self) -> None:
+        """Close the underlying WebSocket connection."""
         await self._connection.disconnect()
 
     async def subscribe(self, request: WSRequest) -> None:
@@ -58,12 +62,14 @@ class WSAssistant:
         await self.send(request)
 
     async def send(self, request: WSRequest) -> None:
+        """Apply pre-processors and auth, then dispatch the request to the server."""
         request = deepcopy(request)
         request = await self._pre_process_request(request)
         request = await self._authenticate(request)
         await self._connection.send(request)
 
     async def ping(self) -> None:
+        """Send a ping frame to keep the connection alive."""
         await self._connection.ping()
 
     async def iter_messages(self) -> AsyncGenerator[WSResponse | None, None]:
