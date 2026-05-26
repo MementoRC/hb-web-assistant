@@ -13,8 +13,16 @@ class AuthBase(ABC):
 
     @abstractmethod
     async def rest_authenticate(self, request: RESTRequest) -> RESTRequest:
+        """Sign or augment a REST request with authentication credentials.
+
+        Implementations must return the (potentially mutated) request object.
+        """
         raise NotImplementedError
 
     @abstractmethod
     async def ws_authenticate(self, request: WSRequest) -> WSRequest:
+        """Sign or augment a WebSocket request with authentication credentials.
+
+        Implementations must return the (potentially mutated) request object.
+        """
         raise NotImplementedError

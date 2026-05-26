@@ -27,6 +27,7 @@ class RESTAssistant:
         rest_post_processors: list[RESTPostProcessorBase] | None = None,
         auth: AuthBase | None = None,
     ):
+        """Construct a REST assistant wired to the given connection and throttler."""
         self._connection = connection
         self._rest_pre_processors = rest_pre_processors or []
         self._rest_post_processors = rest_post_processors or []
@@ -45,6 +46,10 @@ class RESTAssistant:
         timeout: float | None = None,
         headers: dict[str, Any] | None = None,
     ) -> str | dict[str, Any]:
+        """Execute a throttled REST request and return the decoded JSON body.
+
+        Raises `OSError` on HTTP 4xx/5xx unless `return_err` is `True`.
+        """
         response = await self.execute_request_and_get_response(
             url=url,
             throttler_limit_id=throttler_limit_id,
@@ -72,6 +77,12 @@ class RESTAssistant:
         timeout: float | None = None,
         headers: dict[str, Any] | None = None,
     ) -> RESTResponse:
+        """Execute a throttled REST request and return the raw `RESTResponse`.
+
+        Unlike `execute_request`, this method does not decode the body — callers receive
+        the full response object and can call `.json()` or `.text()` themselves.
+        Raises `OSError` on HTTP 4xx/5xx unless `return_err` is `True`.
+        """
         headers = headers or {}
 
         local_headers: dict[str, str] = {
@@ -109,6 +120,10 @@ class RESTAssistant:
             return response
 
     async def call(self, request: RESTRequest, timeout: float | None = None) -> RESTResponse:
+        """Apply pre-processors and auth, dispatch the request, then apply post-processors.
+
+        This is the lowest-level public entry point; it does not interact with the throttler.
+        """
         request = deepcopy(request)
         request = await self._pre_process_request(request)
         request = await self._authenticate(request)

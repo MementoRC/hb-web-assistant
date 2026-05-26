@@ -12,4 +12,8 @@ class WSPostProcessorBase(abc.ABC):
 
     @abc.abstractmethod
     async def post_process(self, response: WSResponse) -> WSResponse:
+        """Transform the WebSocket response before it is returned to the caller.
+
+        Implementations must return the (potentially mutated) response object.
+        """
         raise NotImplementedError

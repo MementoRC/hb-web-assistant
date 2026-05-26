@@ -26,6 +26,7 @@ class AsyncThrottlerBase(ABC):
 
     @classmethod
     def logger(cls) -> logging.Logger:
+        """Return the class-level logger, creating it on first access."""
         if cls._logger is None:
             cls._logger = logging.getLogger(__name__)
         return cls._logger
@@ -63,6 +64,10 @@ class AsyncThrottlerBase(ABC):
         self._lock = asyncio.Lock()
 
     def set_rate_limits(self, rate_limits: list[RateLimit]) -> None:
+        """Replace the active rate-limit set and rebuild the internal ID-to-limit index.
+
+        The supplied limits are deep-copied and scaled by the configured `limits_pct`.
+        """
         # Rate Limit Definitions
         self._rate_limits: list[RateLimit] = copy.deepcopy(rate_limits)
 
@@ -94,6 +99,11 @@ class AsyncThrottlerBase(ABC):
     def get_related_limits(
         self, limit_id: str
     ) -> tuple[RateLimit | None, list[tuple[RateLimit, int]]]:
+        """Resolve a limit ID to its primary `RateLimit` and any linked limits with weights.
+
+        Returns a 2-tuple of (primary_limit, [(linked_limit, weight), ...]).  If the ID
+        is not registered, primary_limit is `None` and the linked list is empty.
+        """
         rate_limit: RateLimit | None = self._id_to_limit_map.get(limit_id, None)
         linked_limits: list[LinkedLimitWeightPair] = (
             [] if rate_limit is None else rate_limit.linked_limits
@@ -109,4 +119,9 @@ class AsyncThrottlerBase(ABC):
 
     @abstractmethod
     def execute_task(self, limit_id: str) -> AsyncRequestContextBase:
+        """Return an async context manager that gates entry on available capacity for `limit_id`.
+
+        Use as `async with throttler.execute_task(limit_id): ...`.  Implementations must
+        block (via `acquire()`) until the rate limit has room for the new task.
+        """
         raise NotImplementedError

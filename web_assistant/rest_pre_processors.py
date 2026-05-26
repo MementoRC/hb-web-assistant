@@ -12,4 +12,8 @@ class RESTPreProcessorBase(abc.ABC):
 
     @abc.abstractmethod
     async def pre_process(self, request: RESTRequest) -> RESTRequest:
+        """Transform the request before it is dispatched to the server.
+
+        Implementations must return the (potentially mutated) request object.
+        """
         raise NotImplementedError
