@@ -75,3 +75,8 @@ docs/site/
 .env.production.local
 .claude/
 logs/
+
+# Additional AI dev-tool artifacts (.claude/ already present above)
+.mcp.json
+.aider*
+.aider/
