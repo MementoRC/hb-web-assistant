@@ -2,6 +2,9 @@
 requires = ["hatchling>=1.29.0"]
 build-backend = "hatchling.build"
 
+[tool.hatch.metadata]
+allow-direct-references = true
+
 [project]
 name = "hb-web-assistant"
 dynamic = ["version"]
@@ -10,6 +13,7 @@ requires-python = ">=3.12"
 license = {text = "Apache-2.0"}
 dependencies = [
     "aiohttp",
+    "hb-logger @ git+https://github.com/MementoRC/hb-logger.git@06534b7708a13b4425a06dd154976db96c2c45be",
 ]
 
 [project.optional-dependencies]

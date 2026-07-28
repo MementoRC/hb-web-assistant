@@ -1,10 +1,10 @@
 import asyncio
 import copy
-import logging
 import math
 from abc import ABC, abstractmethod
 from decimal import Decimal
 
+from web_assistant.hb_compat.common import HummingbotLogger, get_logger
 from web_assistant.throttler.async_request_context_base import AsyncRequestContextBase
 from web_assistant.throttler.data_types import LinkedLimitWeightPair, RateLimit, TaskLog
 
@@ -22,13 +22,13 @@ class AsyncThrottlerBase(ABC):
     """
 
     _default_config_map: dict[str, object] = {}
-    _logger: logging.Logger | None = None
+    _logger: HummingbotLogger | None = None
 
     @classmethod
-    def logger(cls) -> logging.Logger:
+    def logger(cls) -> HummingbotLogger:
         """Return the class-level logger, creating it on first access."""
         if cls._logger is None:
-            cls._logger = logging.getLogger(__name__)
+            cls._logger = get_logger(__name__)
         return cls._logger
 
     def __init__(

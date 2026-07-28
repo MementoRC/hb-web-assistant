@@ -1,13 +1,13 @@
 import asyncio
-import logging
 import time
 from abc import ABC, abstractmethod
 from decimal import Decimal
 from typing import Any
 
+from web_assistant.hb_compat.common import HummingbotLogger, get_logger
 from web_assistant.throttler.data_types import RateLimit, TaskLog
 
-arc_logger = None
+arc_logger: HummingbotLogger | None = None
 MAX_CAPACITY_REACHED_WARNING_INTERVAL = 30.0
 
 
@@ -20,11 +20,11 @@ class AsyncRequestContextBase(ABC):
     _last_max_cap_warning_ts: float = 0.0
 
     @classmethod
-    def logger(cls) -> logging.Logger:
+    def logger(cls) -> HummingbotLogger:
         """Return the module-level logger, creating it on first access."""
         global arc_logger
         if arc_logger is None:
-            arc_logger = logging.getLogger(__name__)
+            arc_logger = get_logger(__name__)
         return arc_logger
 
     def __init__(
