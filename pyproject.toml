@@ -126,13 +126,14 @@ py312 = { features = ["py312", "dev"], solve-group = "py312" }
 test = "pytest tests/"
 test-unit = "pytest tests/unit/"
 test-integration = "pytest tests/integration/"
+coverage = "pytest tests/ --cov=web_assistant --cov-report=term-missing"
 lint = "ruff check web_assistant tests"
 format = "ruff format web_assistant tests"
 format-check = "ruff format --check web_assistant tests"
 typecheck = "mypy web_assistant"
 build = "hatchling build"
 quality = { depends-on = ["lint", "format-check"] }
-check = { depends-on = ["quality", "typecheck", "test"] }
+check = { depends-on = ["quality", "typecheck", "coverage"] }
 
 [tool.hummingbot.supersedes]
 modules = ["hummingbot.core.web_assistant", "hummingbot.core.api_throttler"]
