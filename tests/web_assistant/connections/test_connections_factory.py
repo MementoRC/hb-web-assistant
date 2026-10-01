@@ -1,3 +1,6 @@
+import importlib
+import typing
+
 from tests._helpers.isolated_asyncio_wrapper_test_case import IsolatedAsyncioWrapperTestCase
 from web_assistant.connections.connections_factory import ConnectionsFactory
 from web_assistant.connections.rest_connection import RESTConnection
@@ -16,6 +19,19 @@ class ConnectionsFactoryTest(IsolatedAsyncioWrapperTestCase):
     async def asyncTearDown(self) -> None:
         ConnectionsFactory.reset()
         await super().asyncTearDown()
+
+    def test_connections_factory_t_is_exported_typevar_bound_to_factory(self):
+        module = importlib.import_module("web_assistant.connections.connections_factory")
+
+        type_var = module.ConnectionsFactoryT
+
+        self.assertIsInstance(type_var, typing.TypeVar)
+        self.assertEqual("ConnectionsFactoryT", type_var.__name__)
+        bound = type_var.__bound__
+        if isinstance(bound, typing.ForwardRef):
+            self.assertEqual("ConnectionsFactory", bound.__forward_arg__)
+        else:
+            self.assertIs(ConnectionsFactory, bound)
 
     async def test_get_rest_connection(self):
         factory = ConnectionsFactory()
