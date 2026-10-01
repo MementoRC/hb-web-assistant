@@ -263,6 +263,34 @@ class AsyncThrottlerUnitTests(unittest.TestCase):
         with self.assertRaises(asyncio.exceptions.TimeoutError):
             self.ev_loop.run_until_complete(asyncio.wait_for(context.acquire(), 1.0))
 
+    def test_concurrent_acquirers_cannot_overbook_a_limit(self):
+        # A limit of N must admit exactly N of M > N concurrent acquirers: the capacity
+        # check and the task-log append have to happen under the same lock hold. Lock
+        # contention (all acquirers queued as waiters) is what exposes the race.
+        rate_limit = RateLimit(limit_id="test_limit", limit=3, time_interval=60)
+        throttler = AsyncThrottler(rate_limits=[rate_limit])
+        acquired = 0
+
+        async def acquirer():
+            nonlocal acquired
+            async with throttler.execute_task(limit_id=rate_limit.limit_id):
+                acquired += 1
+
+        async def run():
+            # Hold the shared lock so every acquirer queues as a waiter before any proceeds
+            async with throttler._lock:
+                tasks = [asyncio.ensure_future(acquirer()) for _ in range(10)]
+                await asyncio.sleep(0.1)
+            await asyncio.sleep(0.5)
+            for task in tasks:
+                task.cancel()
+            await asyncio.gather(*tasks, return_exceptions=True)
+
+        self.ev_loop.run_until_complete(run())
+
+        self.assertEqual(3, acquired)
+        self.assertEqual(3, len(throttler._task_logs))
+
     def test_within_capacity_returns_true_for_throttler_without_configured_limits(self):
         throttler = AsyncThrottler(rate_limits=[])
         context = throttler.execute_task(limit_id="test_limit_id")
