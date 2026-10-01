@@ -1,11 +1,14 @@
 from __future__ import annotations
 
-from typing import Any
+from typing import Any, Self, TypeVar
 
 import aiohttp
 
 from web_assistant.connections.rest_connection import RESTConnection
 from web_assistant.connections.ws_connection import WSConnection
+
+# Public alias kept for surface parity with the legacy hummingbot.core.web_assistant module
+ConnectionsFactoryT = TypeVar("ConnectionsFactoryT", bound="ConnectionsFactory")
 
 
 class ConnectionsFactory:
@@ -77,7 +80,7 @@ class ConnectionsFactory:
             self._ws_independent_session = None
         ConnectionsFactory.reset()
 
-    async def __aenter__(self) -> ConnectionsFactory:
+    async def __aenter__(self) -> Self:
         """
         Enter the async context manager.
         """
