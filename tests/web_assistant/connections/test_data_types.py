@@ -171,6 +171,20 @@ class EndpointRESTRequestTest(unittest.TestCase):
         self.assertIsInstance(request.data, str)
         self.assertEqual(data, json.loads(request.data))
 
+    def test_endpoint_rest_request_data_serialization_matches_legacy_ujson_bytes(self):
+        data = {"a": 1, "path": "/api/v1", "nested": {"b": [1, 2], "c": "x/y"}}
+
+        request = EndpointRESTRequestDummy(
+            method=RESTMethod.POST,
+            endpoint="some/endpoint",
+            data=data,
+        )
+
+        self.assertEqual(
+            r'{"a":1,"path":"\/api\/v1","nested":{"b":[1,2],"c":"x\/y"}}',
+            request.data,
+        )
+
     def test_raises_on_data_supplied_to_non_post_request(self):
         endpoint = "some/endpoint"
         data = {"one": 1}
