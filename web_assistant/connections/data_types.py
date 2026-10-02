@@ -6,6 +6,8 @@ from dataclasses import dataclass
 from enum import Enum
 from typing import TYPE_CHECKING, Any
 
+import ujson
+
 if TYPE_CHECKING:
     from collections.abc import Mapping
 
@@ -113,7 +115,7 @@ class EndpointRESTRequest(RESTRequest, ABC):
     def _ensure_data(self) -> None:
         if self.method in [RESTMethod.POST, RESTMethod.PUT, RESTMethod.PATCH]:
             if self.data is not None:
-                self.data = json.dumps(self.data)
+                self.data = ujson.dumps(self.data)
         elif self.data is not None:
             raise ValueError(
                 "The `data` field should be used only for POST, PUT, or PATCH requests. Use `params` instead."
