@@ -35,6 +35,8 @@ class AsyncRequestContextBase(ABC):
         lock: asyncio.Lock,
         safety_margin_pct: float,
         retry_interval: float = 0.1,
+        *,
+        primary_weight: int | None = None,
     ):
         """
         Asynchronous context associated with each API request.
@@ -43,13 +45,22 @@ class AsyncRequestContextBase(ABC):
         :param related_limits: List of linked rate limits with its corresponding weight associated with this API Request
         :param lock: A shared asyncio.Lock used between all instances of APIRequestContextBase
         :param retry_interval: Time between each limit check
+        :param primary_weight: Per-call weight charged to `rate_limit`; defaults to `rate_limit.weight`.
+            Linked weights are already resolved inside `related_limits`.
         """
+        self._primary_weight: int | None = primary_weight
         self._task_logs: list[TaskLog] = task_logs
         self._rate_limit: RateLimit = rate_limit
         self._related_limits: list[tuple[RateLimit, int]] = related_limits
         self._lock: asyncio.Lock = lock
         self._safety_margin_pct: float = safety_margin_pct
         self._retry_interval: float = retry_interval
+
+    def _effective_primary_weight(self) -> int:
+        """Weight charged to the primary limit: the per-call override, else its declared weight."""
+        if self._primary_weight is not None:
+            return self._primary_weight
+        return self._rate_limit.weight
 
     def flush(self) -> None:
         """
@@ -95,7 +106,11 @@ class AsyncRequestContextBase(ABC):
 
         # Log the acquired rate limit into the tasks log
         new_logs = [
-            TaskLog(timestamp=now, rate_limit=self._rate_limit, weight=self._rate_limit.weight)
+            TaskLog(
+                timestamp=now,
+                rate_limit=self._rate_limit,
+                weight=self._effective_primary_weight(),
+            )
         ] + [
             # Log its related limits into the tasks log as individual tasks
             TaskLog(timestamp=now, rate_limit=limit, weight=weight)

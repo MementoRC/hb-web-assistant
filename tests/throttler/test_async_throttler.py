@@ -8,6 +8,8 @@ import unittest
 from decimal import Decimal
 from unittest.mock import patch
 
+import pytest
+
 from web_assistant.throttler.async_throttler import AsyncRequestContext, AsyncThrottler
 from web_assistant.throttler.async_throttler_base import _raw_definition_equal
 from web_assistant.throttler.data_types import LinkedLimitWeightPair, RateLimit, TaskLog
@@ -472,6 +474,103 @@ def test_raw_definition_equal_linked_limits_are_order_insensitive():
     )
 
     assert _raw_definition_equal(first, second)
+
+
+def _weighted_throttler() -> AsyncThrottler:
+    return AsyncThrottler(
+        rate_limits=[
+            RateLimit("pool", limit=10, time_interval=5.0),
+            RateLimit("other", limit=10, time_interval=5.0),
+            RateLimit(
+                "ep",
+                limit=100,
+                time_interval=5.0,
+                weight=2,
+                linked_limits=[LinkedLimitWeightPair("pool", 1), LinkedLimitWeightPair("other", 1)],
+            ),
+        ]
+    )
+
+
+def _logged_weights(throttler: AsyncThrottler) -> dict[str, int]:
+    return {log.rate_limit.limit_id: log.weight for log in throttler._task_logs}
+
+
+async def test_weights_none_keeps_declared_weights():
+    throttler = _weighted_throttler()
+    async with throttler.execute_task("ep"):
+        pass
+    assert _logged_weights(throttler) == {"ep": 2, "pool": 1, "other": 1}
+
+
+async def test_weights_primary_only_override():
+    throttler = _weighted_throttler()
+    async with throttler.execute_task("ep", weights={"ep": 7}):
+        pass
+    assert _logged_weights(throttler) == {"ep": 7, "pool": 1, "other": 1}
+
+
+async def test_weights_linked_only_override():
+    throttler = _weighted_throttler()
+    async with throttler.execute_task("ep", weights={"pool": 6}):
+        pass
+    assert _logged_weights(throttler) == {"ep": 2, "pool": 6, "other": 1}
+
+
+async def test_weights_capacity_check_and_log_agree():
+    throttler = _weighted_throttler()
+    async with throttler.execute_task("ep", weights={"pool": 6}):
+        pass
+
+    # 6 used of 10: a further 5 would not fit, 4 exactly fits.
+    assert throttler.execute_task("ep", weights={"pool": 5}).within_capacity() is False
+    assert throttler.execute_task("ep", weights={"pool": 4}).within_capacity() is True
+    # Without an override the declared weight (1) fits.
+    assert throttler.execute_task("ep").within_capacity() is True
+
+    async with throttler.execute_task("ep", weights={"pool": 4}):
+        pass
+    pool_used = sum(log.weight for log in throttler._task_logs if log.rate_limit.limit_id == "pool")
+    assert pool_used == 10
+    assert throttler.execute_task("ep").within_capacity() is False
+
+
+async def test_weights_primary_override_is_used_by_capacity_check():
+    throttler = _weighted_throttler()
+    assert throttler.execute_task("ep", weights={"ep": 101}).within_capacity() is False
+    assert throttler.execute_task("ep", weights={"ep": 100}).within_capacity() is True
+
+
+@pytest.mark.parametrize("bad_key", ["nope", "unregistered"])
+def test_weights_unknown_key_raises_value_error(bad_key):
+    throttler = AsyncThrottler(
+        rate_limits=[
+            RateLimit(
+                "ep",
+                limit=10,
+                time_interval=1.0,
+                linked_limits=[LinkedLimitWeightPair("unregistered", 1)],
+            ),
+            RateLimit("unrelated", limit=10, time_interval=1.0),
+        ]
+    )
+    with pytest.raises(ValueError):
+        throttler.execute_task("ep", weights={bad_key: 1})
+    with pytest.raises(ValueError):
+        throttler.execute_task("ep", weights={"unrelated": 1})
+
+
+def test_weights_for_unknown_primary_raises_value_error():
+    throttler = AsyncThrottler(rate_limits=[])
+    with pytest.raises(ValueError):
+        throttler.execute_task("nope", weights={"nope": 1})
+
+
+@pytest.mark.parametrize("bad_weight", [0, -1, True, False, 1.5, "2"])
+def test_weights_invalid_values_raise_value_error(bad_weight):
+    throttler = _weighted_throttler()
+    with pytest.raises(ValueError):
+        throttler.execute_task("ep", weights={"pool": bad_weight})
 
 
 async def test_unknown_limit_id_warn_state_is_per_throttler_instance():

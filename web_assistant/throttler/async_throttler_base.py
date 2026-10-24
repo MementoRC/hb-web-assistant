@@ -2,6 +2,7 @@ import asyncio
 import copy
 import math
 from abc import ABC, abstractmethod
+from collections.abc import Mapping
 from decimal import Decimal
 
 from web_assistant.hb_compat.common import HummingbotLogger, get_logger
@@ -165,11 +166,36 @@ class AsyncThrottlerBase(ABC):
 
         return rate_limit, related_limits
 
+    def _validate_weights(self, limit_id: str, weights: Mapping[str, int]) -> None:
+        """Raise ValueError unless every key is the primary or a registered linked id and every
+        value is an int >= 1 (bool rejected)."""
+        primary = self._id_to_limit_map.get(limit_id)
+        allowed: set[str] = set()
+        if primary is not None:
+            allowed.add(limit_id)
+            allowed.update(
+                pair.limit_id
+                for pair in primary.linked_limits
+                if pair.limit_id in self._id_to_limit_map
+            )
+        for key, weight in weights.items():
+            if key not in allowed:
+                raise ValueError(
+                    f"weights key '{key}' is neither '{limit_id}' nor a registered linked limit of it"
+                )
+            if isinstance(weight, bool) or not isinstance(weight, int) or weight < 1:
+                raise ValueError(f"weight for '{key}' must be an int >= 1, got {weight!r}")
+
     @abstractmethod
-    def execute_task(self, limit_id: str) -> AsyncRequestContextBase:
+    def execute_task(
+        self, limit_id: str, *, weights: Mapping[str, int] | None = None
+    ) -> AsyncRequestContextBase:
         """Return an async context manager that gates entry on available capacity for `limit_id`.
 
         Use as `async with throttler.execute_task(limit_id): ...`.  Implementations must
         block (via `acquire()`) until the rate limit has room for the new task.
+
+        :param weights: Optional per-call weight overrides keyed by the primary id and/or its
+            registered linked ids; ids not present keep their declared weight.
         """
         raise NotImplementedError
