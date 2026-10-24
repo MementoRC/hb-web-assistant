@@ -72,15 +72,27 @@ class AsyncThrottlerBase(ABC):
         The supplied limits are deep-copied and scaled by the configured `limits_pct`.
         """
         # Rate Limit Definitions
-        self._rate_limits: list[RateLimit] = copy.deepcopy(rate_limits)
+        scaled_limits: list[RateLimit] = copy.deepcopy(rate_limits)
 
-        for rate_limit in self._rate_limits:
+        for rate_limit in scaled_limits:
             rate_limit.limit = _scaled_limit(rate_limit.limit, self.limits_pct)
+
+        self._scaled_rate_limits = scaled_limits
 
         # Dictionary of path_url to RateLimit
         self._id_to_limit_map: dict[str, RateLimit] = {
-            limit.limit_id: limit for limit in self._rate_limits
+            limit.limit_id: limit for limit in scaled_limits
         }
+
+    @property
+    def _rate_limits(self) -> list[RateLimit]:
+        """The live list of scaled `RateLimit` objects."""
+        return self._scaled_rate_limits
+
+    @_rate_limits.setter
+    def _rate_limits(self, rate_limits: list[RateLimit]) -> None:
+        """Direct assignment replaces the whole set via `set_rate_limits`, keeping the index in sync."""
+        self.set_rate_limits(rate_limits)
 
     def add_rate_limits(self, rate_limits: list[RateLimit]) -> None:
         """

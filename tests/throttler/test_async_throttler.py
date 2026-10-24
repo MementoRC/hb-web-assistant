@@ -1,4 +1,5 @@
 import asyncio
+import copy
 import logging
 import math
 import sys
@@ -381,6 +382,32 @@ def test_has_limit_and_get_limit_return_stored_scaled_limit():
     assert stored is throttler._id_to_limit_map["known"]
     assert stored is not None
     assert stored.limit == 5
+
+
+def test_rate_limits_assignment_rebuilds_id_to_limit_map():
+    throttler = AsyncThrottler(
+        rate_limits=[RateLimit("old", limit=10, time_interval=5.0)],
+        limits_share_percentage=Decimal("50"),
+    )
+
+    throttler._rate_limits = [RateLimit("new", limit=10, time_interval=5.0)]
+
+    assert list(throttler._id_to_limit_map) == ["new"]
+    assert [limit.limit_id for limit in throttler._rate_limits] == ["new"]
+    assert throttler._id_to_limit_map["new"].limit == 5
+    assert throttler._id_to_limit_map["new"] is throttler._rate_limits[0]
+
+
+def test_rate_limits_getter_returns_live_list_and_deepcopy_works():
+    throttler = AsyncThrottler(rate_limits=[RateLimit("a", limit=3, time_interval=1.0)])
+
+    assert throttler._rate_limits is throttler._rate_limits
+    throttler.add_rate_limits([RateLimit("b", limit=2, time_interval=1.0)])
+    assert [limit.limit_id for limit in throttler._rate_limits] == ["a", "b"]
+
+    copied = copy.deepcopy(throttler._rate_limits)
+    assert [limit.limit_id for limit in copied] == ["a", "b"]
+    assert copied[0] is not throttler._rate_limits[0]
 
 
 async def test_unknown_limit_id_warn_state_is_per_throttler_instance():
