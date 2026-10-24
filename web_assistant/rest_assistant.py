@@ -6,6 +6,7 @@ from typing import Any, cast
 from web_assistant.auth import AuthBase
 from web_assistant.connections.data_types import RESTMethod, RESTRequest, RESTResponse
 from web_assistant.connections.rest_connection import RESTConnection
+from web_assistant.errors import RateLimitedRequestError as RateLimitedRequestError
 from web_assistant.rest_post_processors import RESTPostProcessorBase
 from web_assistant.rest_pre_processors import RESTPreProcessorBase
 from web_assistant.throttler.async_throttler_base import AsyncThrottlerBase
