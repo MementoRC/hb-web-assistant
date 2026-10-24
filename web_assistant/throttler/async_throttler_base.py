@@ -5,6 +5,8 @@ from abc import ABC, abstractmethod
 from collections.abc import Mapping
 from decimal import Decimal
 
+from rate_limit import RateLimitPoolConflictError, coerce_limit
+
 from web_assistant.hb_compat.common import HummingbotLogger, get_logger
 from web_assistant.throttler.async_request_context_base import AsyncRequestContextBase
 from web_assistant.throttler.data_types import LinkedLimitWeightPair, RateLimit, TaskLog
@@ -116,16 +118,17 @@ class AsyncThrottlerBase(ABC):
         Dynamically add new rate limits to the throttler.
         Useful when adding trading pairs at runtime that require pair-specific rate limits.
 
+        An identical re-add (same raw definition) is a no-op.
+
         :param rate_limits: List of RateLimit(s) to add.
+        :raises rate_limit.RateLimitPoolConflictError: if an id is already registered (or repeated in
+            the batch) with a different raw definition. The whole batch is validated first, so
+            nothing is inserted when it raises.
         """
+        self._check_no_conflicts(rate_limits)
         for rate_limit in rate_limits:
             if rate_limit.limit_id in self._id_to_limit_map:
-                existing_raw = self._raw_limits.get(rate_limit.limit_id)
-                if existing_raw is not None and not _raw_definition_equal(existing_raw, rate_limit):
-                    # TODO(#27 phase 2): raise rate_limit.RateLimitPoolConflictError
-                    # (validate the whole batch before inserting anything). For now: silent skip.
-                    pass
-                # Skip if already exists
+                # Identical re-add (conflicts were rejected above): no-op
                 continue
             self._raw_limits[rate_limit.limit_id] = copy.deepcopy(rate_limit)
             # Apply the limits percentage
@@ -133,6 +136,18 @@ class AsyncThrottlerBase(ABC):
             new_limit.limit = _scaled_limit(new_limit.limit, self.limits_pct)
             self._rate_limits.append(new_limit)
             self._id_to_limit_map[new_limit.limit_id] = new_limit
+
+    def _check_no_conflicts(self, rate_limits: list[RateLimit]) -> None:
+        """Raise `RateLimitPoolConflictError` if any limit differs from its registered or earlier-in-batch raw definition."""
+        seen: dict[str, RateLimit] = {}
+        for requested in rate_limits:
+            known = seen.get(requested.limit_id) or self._raw_limits.get(requested.limit_id)
+            if known is None:
+                seen[requested.limit_id] = requested
+            elif not _raw_definition_equal(known, requested):
+                raise RateLimitPoolConflictError(
+                    requested.limit_id, coerce_limit(known), coerce_limit(requested)
+                )
 
     def has_limit(self, limit_id: str) -> bool:
         """Return True if `limit_id` is a registered limit."""

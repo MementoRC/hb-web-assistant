@@ -9,6 +9,7 @@ from decimal import Decimal
 from unittest.mock import patch
 
 import pytest
+from rate_limit import RateLimitPoolConflictError
 
 from web_assistant.throttler.async_throttler import AsyncRequestContext, AsyncThrottler
 from web_assistant.throttler.async_throttler_base import _raw_definition_equal
@@ -460,12 +461,13 @@ def test_raw_limits_hold_unscaled_copies_and_set_rate_limits_replaces_them():
     assert list(throttler._raw_limits) == ["c"]
 
 
-def test_add_rate_limits_identical_readd_is_noop_and_mismatch_is_still_skipped():
+def test_add_rate_limits_identical_readd_is_noop_and_mismatch_raises_leaving_state_untouched():
     throttler = AsyncThrottler(rate_limits=[RateLimit("a", limit=10, time_interval=5.0)])
     stored = throttler._id_to_limit_map["a"]
 
     throttler.add_rate_limits([RateLimit("a", limit=10, time_interval=5.0)])
-    throttler.add_rate_limits([RateLimit("a", limit=99, time_interval=5.0)])
+    with pytest.raises(RateLimitPoolConflictError):
+        throttler.add_rate_limits([RateLimit("a", limit=99, time_interval=5.0)])
 
     assert throttler._id_to_limit_map["a"] is stored
     assert stored.limit == 10

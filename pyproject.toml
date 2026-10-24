@@ -74,6 +74,11 @@ warn_unused_configs = true
 disallow_untyped_defs = true
 warn_unused_ignores = true
 
+# hb-rate-limit v0.1.0 ships annotations but no py.typed marker.
+[[tool.mypy.overrides]]
+module = ["rate_limit", "rate_limit.*"]
+follow_untyped_imports = true
+
 [tool.coverage.run]
 branch = true
 source_pkgs = ["web_assistant"]
