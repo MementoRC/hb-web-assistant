@@ -68,6 +68,7 @@ class AsyncThrottlerBase(ABC):
         :param wall_clock: Epoch clock used only to parse an HTTP-date `Retry-After`.
         """
         self._clock: Callable[[], float] = clock
+        self._wall_clock: Callable[[], float] = wall_clock
         # Core backoff/report machinery; its pause state is this throttler's (see ThrottlerBackedLimiter).
         self._backoff_core = ThrottlerBackedLimiter(self, wall_clock)
         # Pause deadlines (monotonic clock values). Recorded for any id, registered or not.
