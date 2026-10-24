@@ -1,6 +1,7 @@
 import asyncio
 import time
 from abc import ABC, abstractmethod
+from collections.abc import Callable
 from decimal import Decimal
 from typing import Any
 
@@ -37,6 +38,7 @@ class AsyncRequestContextBase(ABC):
         retry_interval: float = 0.1,
         *,
         primary_weight: int | None = None,
+        pause_check: Callable[[], float] | None = None,
     ):
         """
         Asynchronous context associated with each API request.
@@ -47,7 +49,9 @@ class AsyncRequestContextBase(ABC):
         :param retry_interval: Time between each limit check
         :param primary_weight: Per-call weight charged to `rate_limit`; defaults to `rate_limit.weight`.
             Linked weights are already resolved inside `related_limits`.
+        :param pause_check: Returns the seconds this request must still wait for an active pause (<= 0 if none).
         """
+        self._pause_check: Callable[[], float] | None = pause_check
         self._primary_weight: int | None = primary_weight
         self._task_logs: list[TaskLog] = task_logs
         self._rate_limit: RateLimit = rate_limit
@@ -87,14 +91,19 @@ class AsyncRequestContextBase(ABC):
     async def acquire(self) -> None:
         """Block until capacity is available, then record this task in the shared log."""
         while True:
+            paused_for = 0.0
             async with self._lock:
                 self.flush()
+                paused_for = self._pause_check() if self._pause_check is not None else 0.0
 
-                if self.within_capacity():
+                if paused_for <= 0 and self.within_capacity():
                     # Record the task under the same lock hold as the capacity check
                     self._log_acquired_task()
                     return
-            await asyncio.sleep(self._retry_interval)
+            # Sleep outside the lock, never longer than the remaining pause
+            await asyncio.sleep(
+                min(self._retry_interval, paused_for) if paused_for > 0 else self._retry_interval
+            )
 
     def _log_acquired_task(self) -> None:
         """Append this task and its related limits to the shared task log. Caller must hold the lock."""

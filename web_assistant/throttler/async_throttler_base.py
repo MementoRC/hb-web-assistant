@@ -1,8 +1,9 @@
 import asyncio
 import copy
 import math
+import time
 from abc import ABC, abstractmethod
-from collections.abc import Mapping
+from collections.abc import Callable, Mapping
 from decimal import Decimal
 
 from rate_limit import RateLimitPoolConflictError, coerce_limit
@@ -51,6 +52,8 @@ class AsyncThrottlerBase(ABC):
         retry_interval: float = 0.1,
         safety_margin_pct: float | None = 0.05,  # An extra safety margin, in percentage.
         limits_share_percentage: Decimal | None = None,
+        *,
+        clock: Callable[[], float] = time.monotonic,
     ):
         """
         :param rate_limits: List of RateLimit(s).
@@ -59,7 +62,13 @@ class AsyncThrottlerBase(ABC):
             calls are within the limit.
         :param limits_share_percentage: Percentage of the limits to be used by this instance (important when multiple
             bots operate with the same account)
+        :param clock: Monotonic clock used for pause deadlines (injectable for tests).
         """
+        self._clock: Callable[[], float] = clock
+        # Pause deadlines (monotonic clock values). Recorded for any id, registered or not.
+        self._pause_until: dict[str, float] = {}
+        self._pause_all_until: float | None = None
+
         # If configured, users can define the percentage of rate limits to allocate to the throttler.
         share_percentage = limits_share_percentage or Decimal("100")
         self.limits_pct: Decimal = share_percentage / 100
@@ -180,6 +189,44 @@ class AsyncThrottlerBase(ABC):
         ]
 
         return rate_limit, related_limits
+
+    def _deadline_after(self, seconds: float) -> float:
+        if not math.isfinite(seconds):
+            raise ValueError(f"pause seconds must be finite, got {seconds!r}")
+        return self._clock() + max(0.0, seconds)
+
+    def pause(self, limit_id: str, seconds: float) -> None:
+        """Block acquirers of `limit_id`, and of any id that links to it, for `seconds`.
+
+        A pause never shortens an existing one. `limit_id` need not be registered yet.
+        """
+        until = self._deadline_after(seconds)
+        self._pause_until[limit_id] = max(self._pause_until.get(limit_id, until), until)
+
+    def pause_all(self, seconds: float) -> None:
+        """Block every acquirer, including unregistered ids, for `seconds` (never shortens)."""
+        until = self._deadline_after(seconds)
+        self._pause_all_until = (
+            until if self._pause_all_until is None else max(self._pause_all_until, until)
+        )
+
+    def paused_until(self, limit_id: str) -> float | None:
+        """Monotonic deadline of the latest pause affecting `limit_id`, or None if never paused.
+
+        Considers `limit_id`, the ids it links to, and `pause_all`. A past deadline is returned as is.
+        """
+        primary = self._id_to_limit_map.get(limit_id)
+        ids = {limit_id}
+        if primary is not None:
+            ids.update(pair.limit_id for pair in primary.linked_limits)
+        deadlines = [self._pause_until[i] for i in ids if i in self._pause_until]
+        if self._pause_all_until is not None:
+            deadlines.append(self._pause_all_until)
+        return max(deadlines, default=None)
+
+    def _pause_remaining(self, limit_id: str) -> float:
+        deadline = self.paused_until(limit_id)
+        return 0.0 if deadline is None else max(0.0, deadline - self._clock())
 
     def _validate_weights(self, limit_id: str, weights: Mapping[str, int]) -> None:
         """Raise ValueError unless every key is the primary or a registered linked id and every

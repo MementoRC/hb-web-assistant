@@ -2,6 +2,7 @@ import collections
 import time
 from collections.abc import Mapping
 from decimal import Decimal
+from functools import partial
 
 from web_assistant.throttler.async_request_context_base import (
     MAX_CAPACITY_REACHED_WARNING_INTERVAL,
@@ -110,4 +111,5 @@ class AsyncThrottler(AsyncThrottlerBase):
             safety_margin_pct=self._safety_margin_pct,
             retry_interval=self._retry_interval,
             primary_weight=primary_weight,
+            pause_check=partial(self._pause_remaining, limit_id),
         )
