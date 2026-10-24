@@ -573,6 +573,34 @@ def test_weights_invalid_values_raise_value_error(bad_weight):
         throttler.execute_task("ep", weights={"pool": bad_weight})
 
 
+def _scaled_by_id(throttler: AsyncThrottler) -> dict[str, int]:
+    return {limit_id: limit.limit for limit_id, limit in throttler._id_to_limit_map.items()}
+
+
+def test_limits_share_percentage_zero_none_and_hundred_are_identical():
+    rate_limits = [
+        RateLimit("a", limit=10, time_interval=1.0),
+        RateLimit("b", limit=1, time_interval=1.0),
+    ]
+    full = _scaled_by_id(AsyncThrottler(rate_limits, limits_share_percentage=Decimal("100")))
+
+    assert full == {"a": 10, "b": 1}
+    assert _scaled_by_id(AsyncThrottler(rate_limits, limits_share_percentage=None)) == full
+    assert _scaled_by_id(AsyncThrottler(rate_limits, limits_share_percentage=Decimal("0"))) == full
+    assert _scaled_by_id(AsyncThrottler(rate_limits)) == full
+
+
+def test_limits_share_percentage_scaling_is_floored_with_minimum_of_one():
+    rate_limits = [
+        RateLimit("a", limit=10, time_interval=1.0),
+        RateLimit("b", limit=1, time_interval=1.0),
+        RateLimit("c", limit=7, time_interval=1.0),
+    ]
+    throttler = AsyncThrottler(rate_limits, limits_share_percentage=Decimal("55"))
+
+    assert _scaled_by_id(throttler) == {"a": 5, "b": 1, "c": 3}
+
+
 async def test_unknown_limit_id_warn_state_is_per_throttler_instance():
     first = AsyncThrottler(rate_limits=[])
     second = AsyncThrottler(rate_limits=[])
