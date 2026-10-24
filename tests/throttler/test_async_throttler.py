@@ -9,6 +9,7 @@ from decimal import Decimal
 from unittest.mock import patch
 
 from web_assistant.throttler.async_throttler import AsyncRequestContext, AsyncThrottler
+from web_assistant.throttler.async_throttler_base import _raw_definition_equal
 from web_assistant.throttler.data_types import LinkedLimitWeightPair, RateLimit, TaskLog
 
 METRICS_LOG_LEVEL = 21
@@ -408,6 +409,69 @@ def test_rate_limits_getter_returns_live_list_and_deepcopy_works():
     copied = copy.deepcopy(throttler._rate_limits)
     assert [limit.limit_id for limit in copied] == ["a", "b"]
     assert copied[0] is not throttler._rate_limits[0]
+
+
+def test_raw_limits_hold_unscaled_copies_and_set_rate_limits_replaces_them():
+    source = RateLimit("a", limit=10, time_interval=5.0)
+    throttler = AsyncThrottler(rate_limits=[source], limits_share_percentage=Decimal("50"))
+
+    assert throttler._raw_limits["a"].limit == 10
+    assert throttler._raw_limits["a"] is not source
+    assert throttler._id_to_limit_map["a"].limit == 5
+
+    throttler.add_rate_limits([RateLimit("b", limit=8, time_interval=1.0)])
+    assert throttler._raw_limits["b"].limit == 8
+    assert throttler._id_to_limit_map["b"].limit == 4
+
+    throttler.set_rate_limits([RateLimit("c", limit=6, time_interval=1.0)])
+    assert list(throttler._raw_limits) == ["c"]
+
+
+def test_add_rate_limits_identical_readd_is_noop_and_mismatch_is_still_skipped():
+    throttler = AsyncThrottler(rate_limits=[RateLimit("a", limit=10, time_interval=5.0)])
+    stored = throttler._id_to_limit_map["a"]
+
+    throttler.add_rate_limits([RateLimit("a", limit=10, time_interval=5.0)])
+    throttler.add_rate_limits([RateLimit("a", limit=99, time_interval=5.0)])
+
+    assert throttler._id_to_limit_map["a"] is stored
+    assert stored.limit == 10
+    assert throttler._raw_limits["a"].limit == 10
+    assert len(throttler._rate_limits) == 1
+
+
+def test_raw_definition_equal_compares_all_fields():
+    def make(**overrides):
+        fields = {"limit_id": "x", "limit": 5, "time_interval": 1.0, "weight": 1}
+        fields.update(overrides)
+        return RateLimit(**fields)
+
+    assert _raw_definition_equal(make(), make())
+    assert not _raw_definition_equal(make(), make(limit=6))
+    assert not _raw_definition_equal(make(), make(time_interval=2.0))
+    assert not _raw_definition_equal(make(), make(weight=2))
+    assert not _raw_definition_equal(make(), make(linked_limits=[LinkedLimitWeightPair("p", 1)]))
+    assert not _raw_definition_equal(
+        make(linked_limits=[LinkedLimitWeightPair("p", 1)]),
+        make(linked_limits=[LinkedLimitWeightPair("p", 2)]),
+    )
+
+
+def test_raw_definition_equal_linked_limits_are_order_insensitive():
+    first = RateLimit(
+        "x",
+        limit=5,
+        time_interval=1.0,
+        linked_limits=[LinkedLimitWeightPair("p", 1), LinkedLimitWeightPair("q", 2)],
+    )
+    second = RateLimit(
+        "x",
+        limit=5,
+        time_interval=1.0,
+        linked_limits=[LinkedLimitWeightPair("q", 2), LinkedLimitWeightPair("p", 1)],
+    )
+
+    assert _raw_definition_equal(first, second)
 
 
 async def test_unknown_limit_id_warn_state_is_per_throttler_instance():

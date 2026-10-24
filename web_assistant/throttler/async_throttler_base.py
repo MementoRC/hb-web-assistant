@@ -15,6 +15,17 @@ def _scaled_limit(raw_limit: int, pct: Decimal) -> int:
     return max(1, int(floored))
 
 
+def _raw_definition_equal(a: RateLimit, b: RateLimit) -> bool:
+    """Compare two unscaled definitions; `linked_limits` compare as an unordered set of (id, weight)."""
+    return (
+        a.limit == b.limit
+        and a.time_interval == b.time_interval
+        and a.weight == b.weight
+        and {(pair.limit_id, pair.weight) for pair in a.linked_limits}
+        == {(pair.limit_id, pair.weight) for pair in b.linked_limits}
+    )
+
+
 class AsyncThrottlerBase(ABC):
     """
     The APIThrottlerBase is an abstract class meant to describe the functions necessary to handle the
@@ -79,6 +90,11 @@ class AsyncThrottlerBase(ABC):
 
         self._scaled_rate_limits = scaled_limits
 
+        # Unscaled deep copies of the definitions, used for conflict detection in add_rate_limits.
+        self._raw_limits: dict[str, RateLimit] = {
+            limit.limit_id: copy.deepcopy(limit) for limit in rate_limits
+        }
+
         # Dictionary of path_url to RateLimit
         self._id_to_limit_map: dict[str, RateLimit] = {
             limit.limit_id: limit for limit in scaled_limits
@@ -102,9 +118,15 @@ class AsyncThrottlerBase(ABC):
         :param rate_limits: List of RateLimit(s) to add.
         """
         for rate_limit in rate_limits:
-            # Skip if already exists
             if rate_limit.limit_id in self._id_to_limit_map:
+                existing_raw = self._raw_limits.get(rate_limit.limit_id)
+                if existing_raw is not None and not _raw_definition_equal(existing_raw, rate_limit):
+                    # TODO(#27 phase 2): raise rate_limit.RateLimitPoolConflictError
+                    # (validate the whole batch before inserting anything). For now: silent skip.
+                    pass
+                # Skip if already exists
                 continue
+            self._raw_limits[rate_limit.limit_id] = copy.deepcopy(rate_limit)
             # Apply the limits percentage
             new_limit = copy.deepcopy(rate_limit)
             new_limit.limit = _scaled_limit(new_limit.limit, self.limits_pct)
