@@ -1,4 +1,5 @@
 from collections.abc import AsyncIterator
+from contextlib import asynccontextmanager
 from email.utils import formatdate
 
 import aiohttp
@@ -182,6 +183,52 @@ async def test_without_a_limit_id_5xx_is_a_plain_oserror(env, mocked_api):
 
     with pytest.raises(OSError) as excinfo:
         await env.get(limit_id="")
+
+    assert type(excinfo.value) is OSError
+
+
+class _DuckThrottler:
+    """Minimal duck-typed throttler exposing only `execute_task`."""
+
+    @asynccontextmanager
+    async def execute_task(self, limit_id: str):
+        yield
+
+
+@pytest_asyncio.fixture
+async def duck_assistant() -> AsyncIterator[RESTAssistant]:
+    async with aiohttp.ClientSession() as session:
+        yield RESTAssistant(RESTConnection(session), throttler=_DuckThrottler())  # type: ignore[arg-type]
+
+
+async def test_duck_throttler_200_returns_normally(duck_assistant, mocked_api):
+    mocked_api.get(URL, status=200, payload={"ok": 1})
+
+    result = await duck_assistant.execute_request(url=URL, throttler_limit_id=LIMIT_ID)
+
+    assert result == {"ok": 1}
+
+
+async def test_duck_throttler_429_raises_rate_limited_with_header_retry_after(
+    duck_assistant, mocked_api
+):
+    mocked_api.get(URL, status=429, body="slow down", headers={"Retry-After": "7"})
+
+    with pytest.raises(RateLimitedRequestError) as excinfo:
+        await duck_assistant.execute_request(url=URL, throttler_limit_id=LIMIT_ID)
+
+    golden = (
+        "Error executing request GET https://www.test.com/url. HTTP status is 429. Error: slow down"
+    )
+    assert str(excinfo.value) == golden
+    assert excinfo.value.retry_after == 7
+
+
+async def test_duck_throttler_500_raises_plain_oserror(duck_assistant, mocked_api):
+    mocked_api.get(URL, status=500, body="boom")
+
+    with pytest.raises(OSError) as excinfo:
+        await duck_assistant.execute_request(url=URL, throttler_limit_id=LIMIT_ID)
 
     assert type(excinfo.value) is OSError
 

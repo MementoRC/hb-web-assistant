@@ -1,4 +1,5 @@
 import json
+import time
 from asyncio import wait_for
 from copy import deepcopy
 from typing import Any, cast
@@ -115,10 +116,9 @@ class RESTAssistant:
 
             # Every status is reported (a 2xx resets the backoff streak); 429/418 pause the throttler.
             verdict: RateLimitVerdict | None = None
-            if throttler_limit_id:
-                verdict = self._throttler.report_response(
-                    throttler_limit_id, response.status, response.headers
-                )
+            report = getattr(self._throttler, "report_response", None)
+            if throttler_limit_id and callable(report):
+                verdict = report(throttler_limit_id, response.status, response.headers)
 
             if response.status >= 400 and not return_err:
                 error_response = await response.text()
@@ -150,7 +150,7 @@ class RESTAssistant:
         elif status in RATE_LIMIT_STATUSES:
             # No limit id to pause: still surface the rate limit, with Retry-After parsed from headers.
             retry_after = RateLimitExceededError.from_response(
-                status, response.headers, now=self._throttler._wall_clock
+                status, response.headers, now=getattr(self._throttler, "_wall_clock", time.time)
             ).retry_after
             return RateLimitedRequestError(
                 legacy_message, status=status, retry_after=retry_after, limit_id=None
