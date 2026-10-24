@@ -6,9 +6,10 @@ from abc import ABC, abstractmethod
 from collections.abc import Callable, Mapping
 from decimal import Decimal
 
-from rate_limit import RateLimitPoolConflictError, coerce_limit
+from rate_limit import RateLimitPoolConflictError, RateLimitVerdict, coerce_limit
 
 from web_assistant.hb_compat.common import HummingbotLogger, get_logger
+from web_assistant.throttler._core_bridge import ThrottlerBackedLimiter
 from web_assistant.throttler.async_request_context_base import AsyncRequestContextBase
 from web_assistant.throttler.data_types import LinkedLimitWeightPair, RateLimit, TaskLog
 
@@ -54,6 +55,7 @@ class AsyncThrottlerBase(ABC):
         limits_share_percentage: Decimal | None = None,
         *,
         clock: Callable[[], float] = time.monotonic,
+        wall_clock: Callable[[], float] = time.time,
     ):
         """
         :param rate_limits: List of RateLimit(s).
@@ -63,8 +65,11 @@ class AsyncThrottlerBase(ABC):
         :param limits_share_percentage: Percentage of the limits to be used by this instance (important when multiple
             bots operate with the same account)
         :param clock: Monotonic clock used for pause deadlines (injectable for tests).
+        :param wall_clock: Epoch clock used only to parse an HTTP-date `Retry-After`.
         """
         self._clock: Callable[[], float] = clock
+        # Core backoff/report machinery; its pause state is this throttler's (see ThrottlerBackedLimiter).
+        self._backoff_core = ThrottlerBackedLimiter(self, wall_clock)
         # Pause deadlines (monotonic clock values). Recorded for any id, registered or not.
         self._pause_until: dict[str, float] = {}
         self._pause_all_until: float | None = None
@@ -223,6 +228,17 @@ class AsyncThrottlerBase(ABC):
         if self._pause_all_until is not None:
             deadlines.append(self._pause_all_until)
         return max(deadlines, default=None)
+
+    def report_response(
+        self, limit_id: str, status: int, headers: Mapping[str, str] | None = None
+    ) -> RateLimitVerdict:
+        """Feed an HTTP response outcome to the core backoff policy; never raises for HTTP statuses.
+
+        2xx resets the streak of `limit_id`. 429 pauses `limit_id` for the Retry-After value or the
+        backoff delay (doubling to a cap, per `limit_id`). 418 calls `pause_all`. Any other status
+        changes nothing.
+        """
+        return self._backoff_core.report_response(limit_id, status, headers)
 
     def _pause_remaining(self, limit_id: str) -> float:
         deadline = self.paused_until(limit_id)
