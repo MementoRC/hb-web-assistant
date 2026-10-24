@@ -401,6 +401,37 @@ def test_rate_limits_assignment_rebuilds_id_to_limit_map():
     assert throttler._id_to_limit_map["new"] is throttler._rate_limits[0]
 
 
+def test_direct_rate_limits_assignment_scales_once_and_leaves_source_untouched():
+    tier_limits = [
+        RateLimit(limit_id="A", limit=100, time_interval=60),
+        RateLimit(
+            limit_id="B",
+            limit=10,
+            time_interval=1,
+            linked_limits=[LinkedLimitWeightPair("A", 2)],
+        ),
+    ]
+    snapshot = copy.deepcopy(tier_limits)
+    throttler = AsyncThrottler(rate_limits=[], limits_share_percentage=Decimal("50"))
+
+    throttler._rate_limits = tier_limits
+    throttler._rate_limits = tier_limits
+
+    assert throttler.get_limit("A").limit == 50
+    assert throttler.get_limit("B").limit == 5
+    assert set(throttler._id_to_limit_map) == {"A", "B"}
+    for stored in throttler._rate_limits:
+        assert throttler._id_to_limit_map[stored.limit_id] is stored
+        assert all(stored is not source for source in tier_limits)
+
+    for source, before in zip(tier_limits, snapshot, strict=True):
+        assert source.limit_id == before.limit_id
+        assert source.limit == before.limit
+        assert source.time_interval == before.time_interval
+        assert source.weight == before.weight
+        assert source.linked_limits == before.linked_limits
+
+
 def test_rate_limits_getter_returns_live_list_and_deepcopy_works():
     throttler = AsyncThrottler(rate_limits=[RateLimit("a", limit=3, time_interval=1.0)])
 
