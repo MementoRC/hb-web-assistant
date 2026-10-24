@@ -52,6 +52,9 @@ class AsyncThrottlerBase(ABC):
 
         self.set_rate_limits(rate_limits)
 
+        # Unknown limit ids already warned about (warn once per id per throttler instance).
+        self._warned_unknown_ids: set[str] = set()
+
         # List of TaskLog used to determine the API requests within a set time window.
         self._task_logs: list[TaskLog] = []
 

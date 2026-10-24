@@ -352,3 +352,30 @@ class AsyncThrottlerUnitTests(unittest.TestCase):
         time_mock.return_value = 1640000000.2100
         result = context.within_capacity()
         self.assertTrue(result)
+
+
+async def test_unknown_limit_id_warns_once_and_runs_unthrottled():
+    throttler = AsyncThrottler(rate_limits=[RateLimit("known", limit=1, time_interval=5.0)])
+
+    with patch.object(AsyncThrottler, "logger") as logger_mock:
+        for _ in range(3):
+            async with throttler.execute_task("nope"):
+                pass
+        async with throttler.execute_task("other-nope"):
+            pass
+
+    assert throttler._task_logs == []
+    assert logger_mock.return_value.warning.call_count == 2
+
+
+async def test_unknown_limit_id_warn_state_is_per_throttler_instance():
+    first = AsyncThrottler(rate_limits=[])
+    second = AsyncThrottler(rate_limits=[])
+
+    with patch.object(AsyncThrottler, "logger") as logger_mock:
+        async with first.execute_task("nope"):
+            pass
+        async with second.execute_task("nope"):
+            pass
+
+    assert logger_mock.return_value.warning.call_count == 2

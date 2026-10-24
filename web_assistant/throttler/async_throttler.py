@@ -79,8 +79,13 @@ class AsyncThrottler(AsyncThrottlerBase):
         :return: An async context (used with async with syntax)
         """
         rate_limit, related_rate_limits = self.get_related_limits(limit_id=limit_id)
-        # rate_limit may be None if limit_id is unknown; AsyncRequestContext handles None gracefully
-        # (within_capacity returns True immediately when _rate_limit is None).
+        # rate_limit may be None if limit_id is unknown: warn once per id, then run unthrottled
+        # (within_capacity returns True and no TaskLog is recorded when _rate_limit is None).
+        if rate_limit is None and limit_id not in self._warned_unknown_ids:
+            self._warned_unknown_ids.add(limit_id)
+            self.logger().warning(
+                f"Unknown rate limit id '{limit_id}': request will run unthrottled."
+            )
         return AsyncRequestContext(
             task_logs=self._task_logs,
             rate_limit=rate_limit,  # type: ignore[arg-type]  # migration backlog — annotate in follow-up PR

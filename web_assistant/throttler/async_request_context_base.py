@@ -87,6 +87,9 @@ class AsyncRequestContextBase(ABC):
 
     def _log_acquired_task(self) -> None:
         """Append this task and its related limits to the shared task log. Caller must hold the lock."""
+        if self._rate_limit is None:
+            # Unknown limit_id: runs unthrottled and is never recorded.
+            return
         now = time.time()
         # Each related limit is represented as it own individual TaskLog
 
