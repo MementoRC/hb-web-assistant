@@ -1,11 +1,15 @@
 import json
+import time
 from asyncio import wait_for
 from copy import deepcopy
 from typing import Any, cast
 
+from rate_limit import RATE_LIMIT_STATUSES, RateLimitExceededError, RateLimitVerdict
+
 from web_assistant.auth import AuthBase
 from web_assistant.connections.data_types import RESTMethod, RESTRequest, RESTResponse
 from web_assistant.connections.rest_connection import RESTConnection
+from web_assistant.errors import RateLimitedRequestError as RateLimitedRequestError
 from web_assistant.rest_post_processors import RESTPostProcessorBase
 from web_assistant.rest_pre_processors import RESTPreProcessorBase
 from web_assistant.throttler.async_throttler_base import AsyncThrottlerBase
@@ -110,14 +114,48 @@ class RESTAssistant:
         async with self._throttler.execute_task(limit_id=throttler_limit_id):
             response = await self.call(request=request, timeout=timeout)
 
+            # Every status is reported (a 2xx resets the backoff streak); 429/418 pause the throttler.
+            verdict: RateLimitVerdict | None = None
+            report = getattr(self._throttler, "report_response", None)
+            if throttler_limit_id and callable(report):
+                verdict = report(throttler_limit_id, response.status, response.headers)
+
             if response.status >= 400 and not return_err:
                 error_response = await response.text()
                 error_text = "N/A" if "<html" in error_response else error_response
-                raise OSError(
+                legacy_message = (
                     f"Error executing request {method.name} {url}. HTTP status is {response.status}. "
                     f"Error: {error_text}"
                 )
+                raise self._error_for(legacy_message, response, throttler_limit_id or None, verdict)
             return response
+
+    def _error_for(
+        self,
+        legacy_message: str,
+        response: RESTResponse,
+        limit_id: str | None,
+        verdict: RateLimitVerdict | None,
+    ) -> OSError:
+        """Pick the edge exception: `RateLimitedRequestError` for 429/418, else a plain `OSError`."""
+        status = response.status
+        if verdict is not None:
+            if verdict.rate_limited:
+                return RateLimitedRequestError(
+                    legacy_message,
+                    status=status,
+                    retry_after=verdict.retry_after,
+                    limit_id=limit_id,
+                )
+        elif status in RATE_LIMIT_STATUSES:
+            # No limit id to pause: still surface the rate limit, with Retry-After parsed from headers.
+            retry_after = RateLimitExceededError.from_response(
+                status, response.headers, now=getattr(self._throttler, "_wall_clock", time.time)
+            ).retry_after
+            return RateLimitedRequestError(
+                legacy_message, status=status, retry_after=retry_after, limit_id=None
+            )
+        return OSError(legacy_message)
 
     async def call(self, request: RESTRequest, timeout: float | None = None) -> RESTResponse:
         """Apply pre-processors and auth, dispatch the request, then apply post-processors.

@@ -1,6 +1,8 @@
 import collections
 import time
+from collections.abc import Mapping
 from decimal import Decimal
+from functools import partial
 
 from web_assistant.throttler.async_request_context_base import (
     MAX_CAPACITY_REACHED_WARNING_INTERVAL,
@@ -24,7 +26,7 @@ class AsyncRequestContext(AsyncRequestContextBase):
         """
         if self._rate_limit is not None:
             list_of_limits: list[tuple[RateLimit, int]] = [
-                (self._rate_limit, self._rate_limit.weight)
+                (self._rate_limit, self._effective_primary_weight())
             ] + self._related_limits
             limit_id_to_task_log_map: dict[str, list[TaskLog]] = collections.defaultdict(list)
             for task in self._task_logs:
@@ -71,16 +73,36 @@ class AsyncThrottler(AsyncThrottlerBase):
         this (whether it belongs to Pool 0 or Pool 1) will have to wait for new capacity (some of the Task A flushed out).
     """
 
-    def execute_task(self, limit_id: str) -> AsyncRequestContext:
+    def execute_task(
+        self, limit_id: str, *, weights: Mapping[str, int] | None = None
+    ) -> AsyncRequestContext:
         """
         Creates an async context where code within the context (a task) can be run only when all rate
         limits have capacity for the new task.
         :param limit_id: the limit_id associated with the APi request
+        :param weights: optional per-call weight overrides for the primary and/or its registered
+            linked ids (ints >= 1); ids not present keep their declared weight.
         :return: An async context (used with async with syntax)
+        :raises ValueError: if `weights` has a key outside the primary and its registered linked ids,
+            or a value that is not an int >= 1.
         """
+        primary_weight: int | None = None
+        if weights:
+            self._validate_weights(limit_id, weights)
+            primary_weight = weights.get(limit_id)
         rate_limit, related_rate_limits = self.get_related_limits(limit_id=limit_id)
-        # rate_limit may be None if limit_id is unknown; AsyncRequestContext handles None gracefully
-        # (within_capacity returns True immediately when _rate_limit is None).
+        if weights:
+            related_rate_limits = [
+                (limit, weights.get(limit.limit_id, weight))
+                for limit, weight in related_rate_limits
+            ]
+        # rate_limit may be None if limit_id is unknown: warn once per id, then run unthrottled
+        # (within_capacity returns True and no TaskLog is recorded when _rate_limit is None).
+        if rate_limit is None and limit_id not in self._warned_unknown_ids:
+            self._warned_unknown_ids.add(limit_id)
+            self.logger().warning(
+                f"Unknown rate limit id '{limit_id}': request will run unthrottled."
+            )
         return AsyncRequestContext(
             task_logs=self._task_logs,
             rate_limit=rate_limit,  # type: ignore[arg-type]  # migration backlog — annotate in follow-up PR
@@ -88,4 +110,6 @@ class AsyncThrottler(AsyncThrottlerBase):
             lock=self._lock,
             safety_margin_pct=self._safety_margin_pct,
             retry_interval=self._retry_interval,
+            primary_weight=primary_weight,
+            pause_check=partial(self._pause_remaining, limit_id),
         )
