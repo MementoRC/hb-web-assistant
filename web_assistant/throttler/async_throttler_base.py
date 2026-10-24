@@ -99,6 +99,17 @@ class AsyncThrottlerBase(ABC):
             self._rate_limits.append(new_limit)
             self._id_to_limit_map[new_limit.limit_id] = new_limit
 
+    def has_limit(self, limit_id: str) -> bool:
+        """Return True if `limit_id` is a registered limit."""
+        return limit_id in self._id_to_limit_map
+
+    def get_limit(self, limit_id: str) -> RateLimit | None:
+        """Return the live stored `RateLimit` (its `.limit` already scaled by `limits_pct`), or None.
+
+        The returned object is not a copy; callers must not mutate it.
+        """
+        return self._id_to_limit_map.get(limit_id)
+
     def get_related_limits(
         self, limit_id: str
     ) -> tuple[RateLimit | None, list[tuple[RateLimit, int]]]:

@@ -368,6 +368,21 @@ async def test_unknown_limit_id_warns_once_and_runs_unthrottled():
     assert logger_mock.return_value.warning.call_count == 2
 
 
+def test_has_limit_and_get_limit_return_stored_scaled_limit():
+    throttler = AsyncThrottler(
+        rate_limits=[RateLimit("known", limit=10, time_interval=5.0)],
+        limits_share_percentage=Decimal("55"),
+    )
+
+    assert throttler.has_limit("known") is True
+    assert throttler.has_limit("nope") is False
+    assert throttler.get_limit("nope") is None
+    stored = throttler.get_limit("known")
+    assert stored is throttler._id_to_limit_map["known"]
+    assert stored is not None
+    assert stored.limit == 5
+
+
 async def test_unknown_limit_id_warn_state_is_per_throttler_instance():
     first = AsyncThrottler(rate_limits=[])
     second = AsyncThrottler(rate_limits=[])
