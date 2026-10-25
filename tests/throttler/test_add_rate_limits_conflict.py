@@ -1,5 +1,6 @@
+from unittest.mock import patch
+
 import pytest
-from rate_limit import RateLimitPoolConflictError
 
 from web_assistant.throttler.async_throttler import AsyncThrottler
 from web_assistant.throttler.data_types import LinkedLimitWeightPair, RateLimit
@@ -11,15 +12,51 @@ def make(limit_id: str = "a", **overrides) -> RateLimit:
     return RateLimit(limit_id, **fields)
 
 
-def test_mismatched_readd_raises_pool_conflict_error():
+def test_attach_connector_readd_keeps_connector_definition_and_warns_once():
+    # Parent CandlesBase.attach_connector re-adds the candles feed limits to a connector throttler.
+    throttler = AsyncThrottler(
+        rate_limits=[RateLimit(limit_id="REQUEST_WEIGHT", limit=2400, time_interval=60)]
+    )
+    candles = [
+        RateLimit(limit_id="REQUEST_WEIGHT", limit=1200, time_interval=60),
+        RateLimit(
+            limit_id="candles_ep",
+            limit=1200,
+            time_interval=60,
+            linked_limits=[LinkedLimitWeightPair("REQUEST_WEIGHT", 2)],
+        ),
+    ]
+
+    with patch.object(AsyncThrottler, "logger") as logger_mock:
+        throttler.add_rate_limits(candles)
+        throttler.add_rate_limits(candles)
+
+    assert throttler.get_limit("REQUEST_WEIGHT").limit == 2400
+    assert throttler.has_limit("candles_ep")
+    warning = logger_mock.return_value.warning
+    assert warning.call_count == 1
+    assert "REQUEST_WEIGHT" in warning.call_args.args[0]
+
+
+def add_capturing_warnings(throttler: AsyncThrottler, limits: list[RateLimit]) -> list[str]:
+    with patch.object(AsyncThrottler, "logger") as logger_mock:
+        throttler.add_rate_limits(limits)
+    return [call.args[0] for call in logger_mock.return_value.warning.call_args_list]
+
+
+def test_mismatched_readd_keeps_existing_and_warns_once_without_raising():
     throttler = AsyncThrottler(rate_limits=[make("a")])
 
-    with pytest.raises(RateLimitPoolConflictError) as excinfo:
-        throttler.add_rate_limits([make("a", limit=99)])
+    first = add_capturing_warnings(throttler, [make("a", limit=99)])
+    second = add_capturing_warnings(throttler, [make("a", limit=99)])
 
-    assert excinfo.value.pool == "a"
-    assert excinfo.value.existing.limit == 10
-    assert excinfo.value.requested.limit == 99
+    assert len(first) == 1
+    assert "'a'" in first[0]
+    assert "limit=10" in first[0]
+    assert "limit=99" in first[0]
+    assert "keeping the existing" in first[0]
+    assert second == []
+    assert throttler.get_limit("a").limit == 10
 
 
 @pytest.mark.parametrize(
@@ -31,43 +68,56 @@ def test_mismatched_readd_raises_pool_conflict_error():
         {"linked_limits": [LinkedLimitWeightPair("p", 1)]},
     ],
 )
-def test_every_raw_field_difference_conflicts(override):
+def test_every_raw_field_difference_keeps_existing_and_warns(override):
     throttler = AsyncThrottler(rate_limits=[make("a")])
 
-    with pytest.raises(RateLimitPoolConflictError):
-        throttler.add_rate_limits([make("a", **override)])
+    warnings = add_capturing_warnings(throttler, [make("a", **override)])
+
+    assert len(warnings) == 1
+    assert throttler._raw_limits["a"].limit == 10
+    assert throttler._raw_limits["a"].time_interval == 5.0
+    assert throttler._raw_limits["a"].weight == 1
+    assert throttler._raw_limits["a"].linked_limits == []
 
 
-def test_conflict_is_detected_against_raw_not_scaled_definition():
+def test_mismatch_is_detected_against_raw_not_scaled_definition():
     from decimal import Decimal
 
     throttler = AsyncThrottler(rate_limits=[make("a")], limits_share_percentage=Decimal("50"))
 
-    throttler.add_rate_limits([make("a")])  # identical raw: no-op even though stored is scaled
-    with pytest.raises(RateLimitPoolConflictError):
-        throttler.add_rate_limits([make("a", limit=5)])  # equals the SCALED value, still a conflict
+    # identical raw: silent no-op even though stored is scaled
+    assert add_capturing_warnings(throttler, [make("a")]) == []
+    # equals the SCALED value, still a mismatch against the raw definition
+    assert len(add_capturing_warnings(throttler, [make("a", limit=5)])) == 1
+    assert throttler.get_limit("a").limit == 5  # 10 scaled by 50%, existing kept
 
 
-def test_conflict_inserts_nothing_from_the_batch():
+def test_mismatch_keeps_existing_and_still_applies_new_ids_in_the_batch():
     throttler = AsyncThrottler(rate_limits=[make("a")])
+    stored = throttler.get_limit("a")
 
-    with pytest.raises(RateLimitPoolConflictError):
-        throttler.add_rate_limits([make("new"), make("a", limit=99), make("other")])
+    warnings = add_capturing_warnings(throttler, [make("new"), make("a", limit=99), make("other")])
 
-    assert not throttler.has_limit("new")
-    assert not throttler.has_limit("other")
-    assert [limit.limit_id for limit in throttler._rate_limits] == ["a"]
-    assert list(throttler._raw_limits) == ["a"]
+    assert len(warnings) == 1
+    assert throttler.has_limit("new")
+    assert throttler.has_limit("other")
+    assert throttler.get_limit("a") is stored
+    assert stored.limit == 10
+    assert [limit.limit_id for limit in throttler._rate_limits] == ["a", "new", "other"]
+    assert list(throttler._raw_limits) == ["a", "new", "other"]
 
 
-def test_conflicting_duplicates_inside_the_batch_raise_and_insert_nothing():
+def test_conflicting_duplicates_inside_the_batch_keep_first_and_warn_once():
     throttler = AsyncThrottler(rate_limits=[])
 
-    with pytest.raises(RateLimitPoolConflictError):
-        throttler.add_rate_limits([make("x"), make("y"), make("x", limit=3)])
+    warnings = add_capturing_warnings(
+        throttler, [make("x"), make("y"), make("x", limit=3), make("x", limit=4)]
+    )
 
-    assert throttler._rate_limits == []
-    assert throttler._raw_limits == {}
+    assert len(warnings) == 1
+    assert [limit.limit_id for limit in throttler._rate_limits] == ["x", "y"]
+    assert throttler.get_limit("x").limit == 10
+    assert throttler._raw_limits["x"].limit == 10
 
 
 def test_identical_duplicates_inside_the_batch_are_collapsed():
