@@ -6,7 +6,7 @@ from abc import ABC, abstractmethod
 from collections.abc import Callable, Mapping
 from decimal import Decimal
 
-from rate_limit import RateLimitPoolConflictError, RateLimitVerdict, coerce_limit, scale_limit
+from rate_limit import RateLimitVerdict, scale_limit
 
 from web_assistant.hb_compat.common import HummingbotLogger, get_logger
 from web_assistant.throttler._core_bridge import ThrottlerBackedLimiter
@@ -22,6 +22,14 @@ def _raw_definition_equal(a: RateLimit, b: RateLimit) -> bool:
         and a.weight == b.weight
         and {(pair.limit_id, pair.weight) for pair in a.linked_limits}
         == {(pair.limit_id, pair.weight) for pair in b.linked_limits}
+    )
+
+
+def _describe(limit: RateLimit) -> str:
+    links = [(pair.limit_id, pair.weight) for pair in limit.linked_limits]
+    return (
+        f"limit={limit.limit}, time_interval={limit.time_interval}, "
+        f"weight={limit.weight}, linked_limits={links}"
     )
 
 
@@ -77,6 +85,8 @@ class AsyncThrottlerBase(ABC):
 
         # Unknown limit ids already warned about (warn once per id per throttler instance).
         self._warned_unknown_ids: set[str] = set()
+        # Limit ids already warned about for a mismatched add_rate_limits re-add (once per id).
+        self._warned_conflict_ids: set[str] = set()
 
         # List of TaskLog used to determine the API requests within a set time window.
         self._task_logs: list[TaskLog] = []
@@ -127,17 +137,20 @@ class AsyncThrottlerBase(ABC):
         Dynamically add new rate limits to the throttler.
         Useful when adding trading pairs at runtime that require pair-specific rate limits.
 
-        An identical re-add (same raw definition) is a no-op.
+        Additive and keep-existing: an id that is already registered (or appeared earlier in the
+        batch) keeps its first definition. An identical re-add is a silent no-op; a re-add with a
+        different raw definition is ignored and logged as a warning once per id per throttler
+        instance. It never raises. This is the legacy contract the parent's
+        `CandlesBase.attach_connector` relies on, where a connector's own definition must win over
+        the candles feed's.
 
         :param rate_limits: List of RateLimit(s) to add.
-        :raises rate_limit.RateLimitPoolConflictError: if an id is already registered (or repeated in
-            the batch) with a different raw definition. The whole batch is validated first, so
-            nothing is inserted when it raises.
         """
-        self._check_no_conflicts(rate_limits)
         for rate_limit in rate_limits:
-            if rate_limit.limit_id in self._id_to_limit_map:
-                # Identical re-add (conflicts were rejected above): no-op
+            existing = self._raw_limits.get(rate_limit.limit_id)
+            if existing is not None:
+                if not _raw_definition_equal(existing, rate_limit):
+                    self._warn_definition_kept(existing, rate_limit)
                 continue
             self._raw_limits[rate_limit.limit_id] = copy.deepcopy(rate_limit)
             # Apply the limits percentage
@@ -146,17 +159,16 @@ class AsyncThrottlerBase(ABC):
             self._rate_limits.append(new_limit)
             self._id_to_limit_map[new_limit.limit_id] = new_limit
 
-    def _check_no_conflicts(self, rate_limits: list[RateLimit]) -> None:
-        """Raise `RateLimitPoolConflictError` if any limit differs from its registered or earlier-in-batch raw definition."""
-        seen: dict[str, RateLimit] = {}
-        for requested in rate_limits:
-            known = seen.get(requested.limit_id) or self._raw_limits.get(requested.limit_id)
-            if known is None:
-                seen[requested.limit_id] = requested
-            elif not _raw_definition_equal(known, requested):
-                raise RateLimitPoolConflictError(
-                    requested.limit_id, coerce_limit(known), coerce_limit(requested)
-                )
+    def _warn_definition_kept(self, existing: RateLimit, rejected: RateLimit) -> None:
+        """Warn once per limit id that a mismatched re-add was ignored in favour of `existing`."""
+        if rejected.limit_id in self._warned_conflict_ids:
+            return
+        self._warned_conflict_ids.add(rejected.limit_id)
+        self.logger().warning(
+            f"Rate limit '{rejected.limit_id}' is already registered with a different definition; "
+            f"keeping the existing one. Existing (kept): {_describe(existing)}. "
+            f"New (rejected): {_describe(rejected)}."
+        )
 
     def has_limit(self, limit_id: str) -> bool:
         """Return True if `limit_id` is a registered limit."""
