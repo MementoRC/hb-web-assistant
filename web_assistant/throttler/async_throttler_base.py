@@ -6,18 +6,12 @@ from abc import ABC, abstractmethod
 from collections.abc import Callable, Mapping
 from decimal import Decimal
 
-from rate_limit import RateLimitPoolConflictError, RateLimitVerdict, coerce_limit
+from rate_limit import RateLimitPoolConflictError, RateLimitVerdict, coerce_limit, scale_limit
 
 from web_assistant.hb_compat.common import HummingbotLogger, get_logger
 from web_assistant.throttler._core_bridge import ThrottlerBackedLimiter
 from web_assistant.throttler.async_request_context_base import AsyncRequestContextBase
 from web_assistant.throttler.data_types import LinkedLimitWeightPair, RateLimit, TaskLog
-
-
-def _scaled_limit(raw_limit: int, pct: Decimal) -> int:
-    """Return max(1, floor(raw_limit * pct)) as a plain int."""
-    floored = math.floor(Decimal(str(raw_limit)) * pct)
-    return max(1, int(floored))
 
 
 def _raw_definition_equal(a: RateLimit, b: RateLimit) -> bool:
@@ -104,7 +98,7 @@ class AsyncThrottlerBase(ABC):
         scaled_limits: list[RateLimit] = copy.deepcopy(rate_limits)
 
         for rate_limit in scaled_limits:
-            rate_limit.limit = _scaled_limit(rate_limit.limit, self.limits_pct)
+            rate_limit.limit = scale_limit(rate_limit.limit, self.limits_pct)
 
         self._scaled_rate_limits = scaled_limits
 
@@ -148,7 +142,7 @@ class AsyncThrottlerBase(ABC):
             self._raw_limits[rate_limit.limit_id] = copy.deepcopy(rate_limit)
             # Apply the limits percentage
             new_limit = copy.deepcopy(rate_limit)
-            new_limit.limit = _scaled_limit(new_limit.limit, self.limits_pct)
+            new_limit.limit = scale_limit(new_limit.limit, self.limits_pct)
             self._rate_limits.append(new_limit)
             self._id_to_limit_map[new_limit.limit_id] = new_limit
 

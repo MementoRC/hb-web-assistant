@@ -3,7 +3,7 @@ import time
 from abc import ABC, abstractmethod
 from collections.abc import Callable
 from decimal import Decimal
-from typing import Any
+from typing import Any, cast
 
 from web_assistant.hb_compat.common import HummingbotLogger, get_logger
 from web_assistant.throttler.data_types import RateLimit, TaskLog
@@ -31,7 +31,7 @@ class AsyncRequestContextBase(ABC):
     def __init__(
         self,
         task_logs: list[TaskLog],
-        rate_limit: RateLimit,
+        rate_limit: RateLimit | None,
         related_limits: list[tuple[RateLimit, int]],
         lock: asyncio.Lock,
         safety_margin_pct: float,
@@ -54,7 +54,7 @@ class AsyncRequestContextBase(ABC):
         self._pause_check: Callable[[], float] | None = pause_check
         self._primary_weight: int | None = primary_weight
         self._task_logs: list[TaskLog] = task_logs
-        self._rate_limit: RateLimit = rate_limit
+        self._rate_limit: RateLimit | None = rate_limit
         self._related_limits: list[tuple[RateLimit, int]] = related_limits
         self._lock: asyncio.Lock = lock
         self._safety_margin_pct: float = safety_margin_pct
@@ -64,7 +64,8 @@ class AsyncRequestContextBase(ABC):
         """Weight charged to the primary limit: the per-call override, else its declared weight."""
         if self._primary_weight is not None:
             return self._primary_weight
-        return self._rate_limit.weight
+        # Only reached for a registered limit: unknown ids (None) never get here.
+        return cast("RateLimit", self._rate_limit).weight
 
     def flush(self) -> None:
         """
