@@ -15,7 +15,7 @@ dependencies = [
     "aiohttp",
     "ujson",
     "hb-logger @ git+https://github.com/MementoRC/hb-logger.git@06534b7708a13b4425a06dd154976db96c2c45be",
-    "hb-rate-limit @ git+https://github.com/MementoRC/hb-rate-limit.git@29e8e2218d1cd3bb4d0ea828028daa84d60476e8",  # v0.2.0 (signed tag); spec range >=0.1,<1
+    "hb-rate-limit @ git+https://github.com/MementoRC/hb-rate-limit.git@12d56aedd5a6e6260a991e44ef86635dcf742aaf",  # v0.3.0 (signed tag); spec range >=0.3,<0.4
 ]
 
 [project.optional-dependencies]
@@ -73,11 +73,6 @@ warn_return_any = true
 warn_unused_configs = true
 disallow_untyped_defs = true
 warn_unused_ignores = true
-
-# hb-rate-limit v0.1.0 ships annotations but no py.typed marker.
-[[tool.mypy.overrides]]
-module = ["rate_limit", "rate_limit.*"]
-follow_untyped_imports = true
 
 [tool.coverage.run]
 branch = true
