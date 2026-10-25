@@ -105,7 +105,7 @@ class AsyncThrottler(AsyncThrottlerBase):
             )
         return AsyncRequestContext(
             task_logs=self._task_logs,
-            rate_limit=rate_limit,  # type: ignore[arg-type]  # migration backlog — annotate in follow-up PR
+            rate_limit=rate_limit,
             related_limits=related_rate_limits,
             lock=self._lock,
             safety_margin_pct=self._safety_margin_pct,
