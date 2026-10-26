@@ -14,7 +14,7 @@ license = {text = "Apache-2.0"}
 dependencies = [
     "aiohttp",
     "ujson",
-    "hb-rate-limit @ git+https://github.com/MementoRC/hb-rate-limit.git@db53841b9dd8ff5285993796d16827f5e9700ace",  # v0.4.0 (signed tag); spec range >=0.4,<0.5
+    "hb-rate-limit @ git+https://github.com/MementoRC/hb-rate-limit.git@31fb35d255c9a93f4fc6f30fb0a65597dff23d58",  # v0.4.1 (signed tag); spec range >=0.4.1,<0.5
 ]
 
 [project.optional-dependencies]
