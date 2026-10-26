@@ -14,7 +14,6 @@ license = {text = "Apache-2.0"}
 dependencies = [
     "aiohttp",
     "ujson",
-    "hb-logger @ git+https://github.com/MementoRC/hb-logger.git@06534b7708a13b4425a06dd154976db96c2c45be",
     "hb-rate-limit @ git+https://github.com/MementoRC/hb-rate-limit.git@db53841b9dd8ff5285993796d16827f5e9700ace",  # v0.4.0 (signed tag); spec range >=0.4,<0.5
 ]
 
