@@ -134,7 +134,7 @@ format = "ruff format web_assistant tests"
 format-check = "ruff format --check web_assistant tests"
 typecheck = "mypy web_assistant"
 build = "hatchling build"
-quality = { depends-on = ["lint", "format-check"] }
+quality = { depends-on = ["lint", "format-check", "typecheck"] }
 check = { depends-on = ["quality", "typecheck", "coverage"] }
 
 [tool.hummingbot.supersedes]
