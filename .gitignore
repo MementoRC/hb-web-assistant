@@ -63,6 +63,7 @@ docs/site/
 
 # Pixi
 .pixi/
+pixi.lock
 
 # Git worktrees
 .worktrees/
