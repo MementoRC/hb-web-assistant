@@ -24,7 +24,7 @@ jobs:
       pull-requests: write
       actions: read
       checks: write
-    secrets: inherit
+    secrets: inherit  # pragma: allowlist secret
     with:
       pixi-environment: "ci"
       python-versions: '["3.12"]'
