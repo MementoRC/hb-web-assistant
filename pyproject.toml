@@ -12,7 +12,7 @@ description = "REST + WebSocket client assistants and token-bucket throttler for
 requires-python = ">=3.12"
 license = {text = "Apache-2.0"}
 dependencies = [
-    "aiohttp<3.14",  # <3.14: aioresponses 0.7.9 incompatible (ClientResponse stream_writer)
+    "aiohttp>=3.9,<3.14",  # <3.14: aioresponses 0.7.9 incompatible (ClientResponse stream_writer)
     "ujson",
     "hb-rate-limit @ git+https://github.com/MementoRC/hb-rate-limit.git@v0.4.1",  # spec range >=0.4.1,<0.5
 ]
@@ -134,8 +134,9 @@ format = "ruff format web_assistant tests"
 format-check = "ruff format --check web_assistant tests"
 typecheck = "mypy web_assistant"
 build = "hatchling build"
-quality = { depends-on = ["lint", "format-check", "typecheck"] }
-check = { depends-on = ["quality", "typecheck", "coverage"] }
+check-conda-first = "python scripts/check_conda_first.py"
+quality = { depends-on = ["check-conda-first", "lint", "format-check", "typecheck"] }
+check = { depends-on = ["check-conda-first", "quality", "typecheck", "coverage"] }
 
 [tool.hummingbot.supersedes]
 modules = ["hummingbot.core.web_assistant", "hummingbot.core.api_throttler"]
