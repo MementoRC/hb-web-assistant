@@ -12,7 +12,7 @@ description = "REST + WebSocket client assistants and token-bucket throttler for
 requires-python = ">=3.12"
 license = {text = "Apache-2.0"}
 dependencies = [
-    "aiohttp<3.14",  # <3.14: aioresponses 0.7.9 incompatible (ClientResponse stream_writer)
+    "aiohttp<3.15",  # <3.14: aioresponses 0.7.9 incompatible (ClientResponse stream_writer)
     "ujson",
     "hb-rate-limit @ git+https://github.com/MementoRC/hb-rate-limit.git@v0.4.1",  # spec range >=0.4.1,<0.5
 ]
