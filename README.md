@@ -37,7 +37,7 @@ pixi install
 pixi run test
 
 # pip
-pip install -e ".[dev]"
+pip install -e .
 ```
 
 ## Project Structure
