@@ -35,9 +35,6 @@ cd _scaffold-hb-web-assistant
 # Pixi (recommended)
 pixi install
 pixi run test
-
-# pip
-pip install -e ".[dev]"
 ```
 
 ## Project Structure
