@@ -23,6 +23,16 @@ path = "web_assistant/__about__.py"
 [tool.hatch.build.targets.wheel]
 packages = ["web_assistant"]
 
+[tool.importlinter]
+root_package = "web_assistant"
+include_external_packages = true
+
+[[tool.importlinter.contracts]]
+name = "web_assistant never imports hummingbot (ADR 0001)"
+type = "forbidden"
+source_modules = ["web_assistant"]
+forbidden_modules = ["hummingbot"]
+
 [tool.pytest.ini_options]
 asyncio_mode = "auto"
 asyncio_default_fixture_loop_scope = "function"
@@ -90,12 +100,14 @@ pytest-cov = ">=7.1.0"
 pytest-timeout = ">=2.4.0"
 ruff = "=0.17.2"
 mypy = ">=1.20.0"
+import-linter = ">=2.0"
 pre-commit = ">=2.15.0"
 aioresponses = ">=0.7.6"
 
 [tool.pixi.feature.ci.dependencies]
 ruff = "=0.17.2"
 mypy = ">=1.20.0"
+import-linter = ">=2.0"
 pytest = ">=9.0.3"
 pytest-asyncio = ">=0.21.0"
 pytest-cov = ">=7.1.0"
@@ -125,7 +137,8 @@ format-check = "ruff format --check web_assistant tests"
 typecheck = "mypy web_assistant"
 build = "hatchling build"
 check-conda-first = "python scripts/check_conda_first.py"
-quality = { depends-on = ["check-conda-first", "lint", "format-check", "typecheck"] }
+lint-boundaries = "lint-imports"
+quality = { depends-on = ["check-conda-first", "lint", "format-check", "typecheck", "lint-boundaries"] }
 check = { depends-on = ["check-conda-first", "quality", "typecheck", "coverage"] }
 
 [tool.hummingbot.supersedes]
