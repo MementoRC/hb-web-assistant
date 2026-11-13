@@ -52,6 +52,17 @@ class LocalHTTPServer:
     def post(self, path: str, **kwargs: Any) -> None:
         self.add("POST", path, **kwargs)
 
+    def assert_called(self, method: str, path: str, times: int = 1) -> None:
+        key = (method.upper(), path)
+        actual = self.requests.count(key)
+        assert actual == times, (
+            f"expected {key} to be called {times} time(s), got {actual}; "
+            f"recorded requests: {self.requests}"
+        )
+
+    def assert_not_called(self, method: str, path: str) -> None:
+        self.assert_called(method, path, times=0)
+
     async def _handle(self, request: web.Request) -> web.Response:
         key = (request.method, request.path)
         self.requests.append(key)

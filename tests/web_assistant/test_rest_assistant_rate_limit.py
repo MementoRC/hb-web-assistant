@@ -77,6 +77,7 @@ async def test_429_golden_string_and_retry_after_seconds_pause(env, mocked_api):
     assert isinstance(error, rate_limit.RateLimitExceededError)
     assert (error.status, error.retry_after, error.limit_id) == (429, 7.0, LIMIT_ID)
     assert env.throttler.paused_until(LIMIT_ID) == 7.0
+    mocked_api.assert_called("GET", PATH)
 
 
 async def test_429_with_http_date_retry_after_sets_the_pause(env, mocked_api):
@@ -144,6 +145,7 @@ async def test_2xx_after_a_429_resets_the_backoff_streak(env, mocked_api):
     with pytest.raises(RateLimitedRequestError):
         await env.get()
     assert env.throttler.paused_until(LIMIT_ID) == 10.0  # now 5.0 + a fresh 5s, not a doubled 10s
+    mocked_api.assert_called("GET", PATH, times=3)
 
 
 async def test_return_err_does_not_raise_but_still_reports_the_response(env, mocked_api):
@@ -217,6 +219,7 @@ async def test_duck_throttler_200_returns_normally(duck_assistant, mocked_api):
     )
 
     assert result == {"ok": 1}
+    mocked_api.assert_called("GET", PATH)
 
 
 async def test_duck_throttler_429_raises_rate_limited_with_header_retry_after(
@@ -248,3 +251,5 @@ async def test_method_name_in_legacy_message_uses_the_request_method(env, mocked
         await env.get(method=RESTMethod.POST)
 
     assert str(excinfo.value).startswith(f"Error executing request POST {env.url}.")
+    mocked_api.assert_called("POST", PATH)
+    mocked_api.assert_not_called("GET", PATH)

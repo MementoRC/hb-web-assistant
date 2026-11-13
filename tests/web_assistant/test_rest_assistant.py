@@ -62,6 +62,7 @@ class RESTAssistantTest(IsolatedAsyncioWrapperTestCase):
         self.assertEqual(resp, ret_json)
         self.assertTrue(pre_processor_ran)
         self.assertTrue(post_processor_ran)
+        server.assert_called("GET", "/url")
         await aiohttp_client_session.close()
 
     @patch("web_assistant.connections.rest_connection.RESTConnection.call")
