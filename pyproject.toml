@@ -33,6 +33,12 @@ type = "forbidden"
 source_modules = ["web_assistant"]
 forbidden_modules = ["hummingbot"]
 
+[[tool.importlinter.contracts]]
+name = "adr-0001-l1-depends-only-on-rate-limit"
+type = "forbidden"
+source_modules = ["web_assistant"]
+forbidden_modules = ["data_type_primitives", "event_bus", "logger", "async_utils", "connector_utils", "candles_feed", "liquidations_feed", "rate_oracle", "market_data", "market_connector", "market_simulator", "remote_iface", "strategy_framework", "order_book", "user_stream_tracker"]
+
 [tool.pytest.ini_options]
 asyncio_mode = "auto"
 asyncio_default_fixture_loop_scope = "function"

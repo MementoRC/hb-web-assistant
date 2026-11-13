@@ -14,6 +14,8 @@ This package provides the HTTP/WebSocket client abstractions and API rate-limiti
 used by 249+ Hummingbot exchange connectors. It operates as a standalone library and is a
 drop-in replacement for the inlined modules in Hummingbot core.
 
+Layer: L1 per ADR 0001 (amendment-1); depends only on `hb-rate-limit` (L0).
+
 The import path `web_assistant` (no `hb_` prefix) is intentional: it preserves continuity
 for existing consumers without requiring import renaming.
 
