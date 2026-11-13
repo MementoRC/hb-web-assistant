@@ -2,9 +2,9 @@ import asyncio
 import json
 
 import aiohttp
-from aioresponses import aioresponses
 
 from tests._helpers.isolated_asyncio_wrapper_test_case import IsolatedAsyncioWrapperTestCase
+from tests._helpers.local_http_server import LocalHTTPServer
 from web_assistant.connections.data_types import RESTMethod, RESTRequest, RESTResponse
 from web_assistant.connections.rest_connection import RESTConnection
 
@@ -15,11 +15,13 @@ class RESTConnectionTest(IsolatedAsyncioWrapperTestCase):
         super().setUpClass()
         cls.ev_loop = asyncio.get_event_loop()
 
-    @aioresponses()
-    async def test_rest_connection_call(self, mocked_api):
-        url = "https://www.test.com/url"
+    async def test_rest_connection_call(self):
+        server = LocalHTTPServer()
+        await server.__aenter__()
+        self.addAsyncCleanup(server.__aexit__, None, None, None)
+        url = server.url("/url")
         resp = {"one": 1}
-        mocked_api.get(url, body=json.dumps(resp).encode())
+        server.get("/url", body=json.dumps(resp).encode())
 
         client_session = aiohttp.ClientSession()
         connection = RESTConnection(client_session)

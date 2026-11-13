@@ -2,9 +2,9 @@ import json
 from unittest.mock import patch
 
 import aiohttp
-from aioresponses import aioresponses
 
 from tests._helpers.isolated_asyncio_wrapper_test_case import IsolatedAsyncioWrapperTestCase
+from tests._helpers.local_http_server import LocalHTTPServer
 from web_assistant.auth import AuthBase
 from web_assistant.connections.data_types import RESTMethod, RESTRequest, RESTResponse, WSRequest
 from web_assistant.connections.rest_connection import RESTConnection
@@ -22,13 +22,15 @@ class RESTAssistantTest(IsolatedAsyncioWrapperTestCase):
     async def asyncSetUp(self) -> None:
         await super().asyncSetUp()
 
-    @aioresponses()
-    async def test_rest_assistant_call_with_pre_and_post_processing(self, mocked_api):
-        url = "https://www.test.com/url"
+    async def test_rest_assistant_call_with_pre_and_post_processing(self):
+        server = LocalHTTPServer()
+        await server.__aenter__()
+        self.addAsyncCleanup(server.__aexit__, None, None, None)
+        url = server.url("/url")
         resp = {"one": 1}
         pre_processor_ran = False
         post_processor_ran = False
-        mocked_api.get(url, body=json.dumps(resp).encode())
+        server.get("/url", body=json.dumps(resp).encode())
 
         class PreProcessor(RESTPreProcessorBase):
             async def pre_process(self, request: RESTRequest) -> RESTRequest:
