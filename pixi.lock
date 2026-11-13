@@ -201,7 +201,7 @@ environments:
       - conda: https://conda.anaconda.org/conda-forge/noarch/virtualenv-21.15.6-pyh5ded981_0.conda
       - conda: https://conda.anaconda.org/conda-forge/noarch/webencodings-0.6.1-pyh5ded981_0.conda
       - conda: https://conda.anaconda.org/conda-forge/noarch/wheel-0.48.0-pyhd8ed1ab_0.conda
-      - pypi: git+https://github.com/MementoRC/hb-rate-limit.git?rev=v0.4.1#31fb35d255c9a93f4fc6f30fb0a65597dff23d58
+      - pypi: git+https://github.com/MementoRC/hb-rate-limit.git?rev=v0.5.0#b63332a00e6e7d817a8d6741fc31afc52a2450a0
       osx-64:
       - conda: https://conda.anaconda.org/conda-forge/noarch/_python_abi3_support-1.0-hd8ed1ab_3.conda
       - conda: https://conda.anaconda.org/conda-forge/noarch/aiohappyeyeballs-2.7.1-pyhd8ed1ab_0.conda
@@ -369,7 +369,7 @@ environments:
       - conda: https://conda.anaconda.org/conda-forge/osx-64/yaml-0.2.5-had63097_3.conda
       - conda: https://conda.anaconda.org/conda-forge/osx-64/yarl-1.25.1-py312hbb2d1fb_0.conda
       - conda: https://conda.anaconda.org/conda-forge/osx-64/zstd-1.5.7-hbc1a06c_7.conda
-      - pypi: git+https://github.com/MementoRC/hb-rate-limit.git?rev=v0.4.1#31fb35d255c9a93f4fc6f30fb0a65597dff23d58
+      - pypi: git+https://github.com/MementoRC/hb-rate-limit.git?rev=v0.5.0#b63332a00e6e7d817a8d6741fc31afc52a2450a0
       osx-arm64:
       - conda: https://conda.anaconda.org/conda-forge/noarch/_python_abi3_support-1.0-hd8ed1ab_3.conda
       - conda: https://conda.anaconda.org/conda-forge/noarch/aiohappyeyeballs-2.7.1-pyhd8ed1ab_0.conda
@@ -537,7 +537,7 @@ environments:
       - conda: https://conda.anaconda.org/conda-forge/osx-arm64/yaml-0.2.5-h74c22ad_3.conda
       - conda: https://conda.anaconda.org/conda-forge/osx-arm64/yarl-1.25.1-py312hf4454c7_0.conda
       - conda: https://conda.anaconda.org/conda-forge/osx-arm64/zstd-1.5.7-hf451053_7.conda
-      - pypi: git+https://github.com/MementoRC/hb-rate-limit.git?rev=v0.4.1#31fb35d255c9a93f4fc6f30fb0a65597dff23d58
+      - pypi: git+https://github.com/MementoRC/hb-rate-limit.git?rev=v0.5.0#b63332a00e6e7d817a8d6741fc31afc52a2450a0
       win-64:
       - conda: https://conda.anaconda.org/conda-forge/noarch/_python_abi3_support-1.0-hd8ed1ab_3.conda
       - conda: https://conda.anaconda.org/conda-forge/noarch/aiohappyeyeballs-2.7.1-pyhd8ed1ab_0.conda
@@ -704,7 +704,7 @@ environments:
       - conda: https://conda.anaconda.org/conda-forge/win-64/yaml-0.2.5-h6a83c73_3.conda
       - conda: https://conda.anaconda.org/conda-forge/win-64/yarl-1.25.1-py312h05f76fc_0.conda
       - conda: https://conda.anaconda.org/conda-forge/win-64/zstd-1.5.7-h534d264_7.conda
-      - pypi: git+https://github.com/MementoRC/hb-rate-limit.git?rev=v0.4.1#31fb35d255c9a93f4fc6f30fb0a65597dff23d58
+      - pypi: git+https://github.com/MementoRC/hb-rate-limit.git?rev=v0.5.0#b63332a00e6e7d817a8d6741fc31afc52a2450a0
   default:
     channels:
     - url: https://conda.anaconda.org/conda-forge/
@@ -881,7 +881,7 @@ environments:
       - conda: https://conda.anaconda.org/conda-forge/noarch/virtualenv-21.15.6-pyh5ded981_0.conda
       - conda: https://conda.anaconda.org/conda-forge/noarch/webencodings-0.6.1-pyh5ded981_0.conda
       - conda: https://conda.anaconda.org/conda-forge/noarch/wheel-0.48.0-pyhd8ed1ab_0.conda
-      - pypi: git+https://github.com/MementoRC/hb-rate-limit.git?rev=v0.4.1#31fb35d255c9a93f4fc6f30fb0a65597dff23d58
+      - pypi: git+https://github.com/MementoRC/hb-rate-limit.git?rev=v0.5.0#b63332a00e6e7d817a8d6741fc31afc52a2450a0
       osx-64:
       - conda: https://conda.anaconda.org/conda-forge/noarch/_python_abi3_support-1.0-hd8ed1ab_3.conda
       - conda: https://conda.anaconda.org/conda-forge/noarch/aiohappyeyeballs-2.7.1-pyhd8ed1ab_0.conda
@@ -1045,7 +1045,7 @@ environments:
       - conda: https://conda.anaconda.org/conda-forge/osx-64/yaml-0.2.5-had63097_3.conda
       - conda: https://conda.anaconda.org/conda-forge/osx-64/yarl-1.25.1-py312hbb2d1fb_0.conda
       - conda: https://conda.anaconda.org/conda-forge/osx-64/zstd-1.5.7-hbc1a06c_7.conda
-      - pypi: git+https://github.com/MementoRC/hb-rate-limit.git?rev=v0.4.1#31fb35d255c9a93f4fc6f30fb0a65597dff23d58
+      - pypi: git+https://github.com/MementoRC/hb-rate-limit.git?rev=v0.5.0#b63332a00e6e7d817a8d6741fc31afc52a2450a0
       osx-arm64:
       - conda: https://conda.anaconda.org/conda-forge/noarch/_python_abi3_support-1.0-hd8ed1ab_3.conda
       - conda: https://conda.anaconda.org/conda-forge/noarch/aiohappyeyeballs-2.7.1-pyhd8ed1ab_0.conda
@@ -1209,7 +1209,7 @@ environments:
       - conda: https://conda.anaconda.org/conda-forge/osx-arm64/yaml-0.2.5-h74c22ad_3.conda
       - conda: https://conda.anaconda.org/conda-forge/osx-arm64/yarl-1.25.1-py312hf4454c7_0.conda
       - conda: https://conda.anaconda.org/conda-forge/osx-arm64/zstd-1.5.7-hf451053_7.conda
-      - pypi: git+https://github.com/MementoRC/hb-rate-limit.git?rev=v0.4.1#31fb35d255c9a93f4fc6f30fb0a65597dff23d58
+      - pypi: git+https://github.com/MementoRC/hb-rate-limit.git?rev=v0.5.0#b63332a00e6e7d817a8d6741fc31afc52a2450a0
       win-64:
       - conda: https://conda.anaconda.org/conda-forge/noarch/_python_abi3_support-1.0-hd8ed1ab_3.conda
       - conda: https://conda.anaconda.org/conda-forge/noarch/aiohappyeyeballs-2.7.1-pyhd8ed1ab_0.conda
@@ -1372,7 +1372,7 @@ environments:
       - conda: https://conda.anaconda.org/conda-forge/win-64/yaml-0.2.5-h6a83c73_3.conda
       - conda: https://conda.anaconda.org/conda-forge/win-64/yarl-1.25.1-py312h05f76fc_0.conda
       - conda: https://conda.anaconda.org/conda-forge/win-64/zstd-1.5.7-h534d264_7.conda
-      - pypi: git+https://github.com/MementoRC/hb-rate-limit.git?rev=v0.4.1#31fb35d255c9a93f4fc6f30fb0a65597dff23d58
+      - pypi: git+https://github.com/MementoRC/hb-rate-limit.git?rev=v0.5.0#b63332a00e6e7d817a8d6741fc31afc52a2450a0
   py312:
     channels:
     - url: https://conda.anaconda.org/conda-forge/
@@ -1549,7 +1549,7 @@ environments:
       - conda: https://conda.anaconda.org/conda-forge/noarch/virtualenv-21.15.6-pyh5ded981_0.conda
       - conda: https://conda.anaconda.org/conda-forge/noarch/webencodings-0.6.1-pyh5ded981_0.conda
       - conda: https://conda.anaconda.org/conda-forge/noarch/wheel-0.48.0-pyhd8ed1ab_0.conda
-      - pypi: git+https://github.com/MementoRC/hb-rate-limit.git?rev=v0.4.1#31fb35d255c9a93f4fc6f30fb0a65597dff23d58
+      - pypi: git+https://github.com/MementoRC/hb-rate-limit.git?rev=v0.5.0#b63332a00e6e7d817a8d6741fc31afc52a2450a0
       osx-64:
       - conda: https://conda.anaconda.org/conda-forge/noarch/_python_abi3_support-1.0-hd8ed1ab_3.conda
       - conda: https://conda.anaconda.org/conda-forge/noarch/aiohappyeyeballs-2.7.1-pyhd8ed1ab_0.conda
@@ -1713,7 +1713,7 @@ environments:
       - conda: https://conda.anaconda.org/conda-forge/osx-64/yaml-0.2.5-had63097_3.conda
       - conda: https://conda.anaconda.org/conda-forge/osx-64/yarl-1.25.1-py312hbb2d1fb_0.conda
       - conda: https://conda.anaconda.org/conda-forge/osx-64/zstd-1.5.7-hbc1a06c_7.conda
-      - pypi: git+https://github.com/MementoRC/hb-rate-limit.git?rev=v0.4.1#31fb35d255c9a93f4fc6f30fb0a65597dff23d58
+      - pypi: git+https://github.com/MementoRC/hb-rate-limit.git?rev=v0.5.0#b63332a00e6e7d817a8d6741fc31afc52a2450a0
       osx-arm64:
       - conda: https://conda.anaconda.org/conda-forge/noarch/_python_abi3_support-1.0-hd8ed1ab_3.conda
       - conda: https://conda.anaconda.org/conda-forge/noarch/aiohappyeyeballs-2.7.1-pyhd8ed1ab_0.conda
@@ -1877,7 +1877,7 @@ environments:
       - conda: https://conda.anaconda.org/conda-forge/osx-arm64/yaml-0.2.5-h74c22ad_3.conda
       - conda: https://conda.anaconda.org/conda-forge/osx-arm64/yarl-1.25.1-py312hf4454c7_0.conda
       - conda: https://conda.anaconda.org/conda-forge/osx-arm64/zstd-1.5.7-hf451053_7.conda
-      - pypi: git+https://github.com/MementoRC/hb-rate-limit.git?rev=v0.4.1#31fb35d255c9a93f4fc6f30fb0a65597dff23d58
+      - pypi: git+https://github.com/MementoRC/hb-rate-limit.git?rev=v0.5.0#b63332a00e6e7d817a8d6741fc31afc52a2450a0
       win-64:
       - conda: https://conda.anaconda.org/conda-forge/noarch/_python_abi3_support-1.0-hd8ed1ab_3.conda
       - conda: https://conda.anaconda.org/conda-forge/noarch/aiohappyeyeballs-2.7.1-pyhd8ed1ab_0.conda
@@ -2040,7 +2040,7 @@ environments:
       - conda: https://conda.anaconda.org/conda-forge/win-64/yaml-0.2.5-h6a83c73_3.conda
       - conda: https://conda.anaconda.org/conda-forge/win-64/yarl-1.25.1-py312h05f76fc_0.conda
       - conda: https://conda.anaconda.org/conda-forge/win-64/zstd-1.5.7-h534d264_7.conda
-      - pypi: git+https://github.com/MementoRC/hb-rate-limit.git?rev=v0.4.1#31fb35d255c9a93f4fc6f30fb0a65597dff23d58
+      - pypi: git+https://github.com/MementoRC/hb-rate-limit.git?rev=v0.5.0#b63332a00e6e7d817a8d6741fc31afc52a2450a0
   quality-ci:
     channels:
     - url: https://conda.anaconda.org/conda-forge/
@@ -2221,7 +2221,7 @@ environments:
       - conda: https://conda.anaconda.org/conda-forge/noarch/virtualenv-21.15.6-pyh5ded981_0.conda
       - conda: https://conda.anaconda.org/conda-forge/noarch/webencodings-0.6.1-pyh5ded981_0.conda
       - conda: https://conda.anaconda.org/conda-forge/noarch/wheel-0.48.0-pyhd8ed1ab_0.conda
-      - pypi: git+https://github.com/MementoRC/hb-rate-limit.git?rev=v0.4.1#31fb35d255c9a93f4fc6f30fb0a65597dff23d58
+      - pypi: git+https://github.com/MementoRC/hb-rate-limit.git?rev=v0.5.0#b63332a00e6e7d817a8d6741fc31afc52a2450a0
       osx-64:
       - conda: https://conda.anaconda.org/conda-forge/noarch/_python_abi3_support-1.0-hd8ed1ab_3.conda
       - conda: https://conda.anaconda.org/conda-forge/noarch/aiohappyeyeballs-2.7.1-pyhd8ed1ab_0.conda
@@ -2389,7 +2389,7 @@ environments:
       - conda: https://conda.anaconda.org/conda-forge/osx-64/yaml-0.2.5-had63097_3.conda
       - conda: https://conda.anaconda.org/conda-forge/osx-64/yarl-1.25.1-py312hbb2d1fb_0.conda
       - conda: https://conda.anaconda.org/conda-forge/osx-64/zstd-1.5.7-hbc1a06c_7.conda
-      - pypi: git+https://github.com/MementoRC/hb-rate-limit.git?rev=v0.4.1#31fb35d255c9a93f4fc6f30fb0a65597dff23d58
+      - pypi: git+https://github.com/MementoRC/hb-rate-limit.git?rev=v0.5.0#b63332a00e6e7d817a8d6741fc31afc52a2450a0
       osx-arm64:
       - conda: https://conda.anaconda.org/conda-forge/noarch/_python_abi3_support-1.0-hd8ed1ab_3.conda
       - conda: https://conda.anaconda.org/conda-forge/noarch/aiohappyeyeballs-2.7.1-pyhd8ed1ab_0.conda
@@ -2557,7 +2557,7 @@ environments:
       - conda: https://conda.anaconda.org/conda-forge/osx-arm64/yaml-0.2.5-h74c22ad_3.conda
       - conda: https://conda.anaconda.org/conda-forge/osx-arm64/yarl-1.25.1-py312hf4454c7_0.conda
       - conda: https://conda.anaconda.org/conda-forge/osx-arm64/zstd-1.5.7-hf451053_7.conda
-      - pypi: git+https://github.com/MementoRC/hb-rate-limit.git?rev=v0.4.1#31fb35d255c9a93f4fc6f30fb0a65597dff23d58
+      - pypi: git+https://github.com/MementoRC/hb-rate-limit.git?rev=v0.5.0#b63332a00e6e7d817a8d6741fc31afc52a2450a0
       win-64:
       - conda: https://conda.anaconda.org/conda-forge/noarch/_python_abi3_support-1.0-hd8ed1ab_3.conda
       - conda: https://conda.anaconda.org/conda-forge/noarch/aiohappyeyeballs-2.7.1-pyhd8ed1ab_0.conda
@@ -2724,7 +2724,7 @@ environments:
       - conda: https://conda.anaconda.org/conda-forge/win-64/yaml-0.2.5-h6a83c73_3.conda
       - conda: https://conda.anaconda.org/conda-forge/win-64/yarl-1.25.1-py312h05f76fc_0.conda
       - conda: https://conda.anaconda.org/conda-forge/win-64/zstd-1.5.7-h534d264_7.conda
-      - pypi: git+https://github.com/MementoRC/hb-rate-limit.git?rev=v0.4.1#31fb35d255c9a93f4fc6f30fb0a65597dff23d58
+      - pypi: git+https://github.com/MementoRC/hb-rate-limit.git?rev=v0.5.0#b63332a00e6e7d817a8d6741fc31afc52a2450a0
 packages:
 - conda: https://conda.anaconda.org/conda-forge/linux-64/_openmp_mutex-4.5-20_gnu.conda
   build_number: 20
@@ -7574,7 +7574,7 @@ packages:
     - zstd >=1.5.7,<1.6.0a0
   size: 387535
   timestamp: 1786599623274
-- pypi: git+https://github.com/MementoRC/hb-rate-limit.git?rev=v0.4.1#31fb35d255c9a93f4fc6f30fb0a65597dff23d58
+- pypi: git+https://github.com/MementoRC/hb-rate-limit.git?rev=v0.5.0#b63332a00e6e7d817a8d6741fc31afc52a2450a0
   name: hb-rate-limit
-  version: 0.4.1
+  version: 0.5.0
   requires_python: '>=3.12'
