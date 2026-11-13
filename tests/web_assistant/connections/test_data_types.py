@@ -2,9 +2,9 @@ import json
 import unittest
 
 import aiohttp
-from aioresponses import aioresponses
 
 from tests._helpers.isolated_asyncio_wrapper_test_case import IsolatedAsyncioWrapperTestCase
+from tests._helpers.local_http_server import LocalHTTPServer
 from web_assistant.connections.data_types import EndpointRESTRequest, RESTMethod, RESTResponse
 
 
@@ -19,13 +19,18 @@ class DataTypesTest(IsolatedAsyncioWrapperTestCase):
 
         self.assertEqual("GET", method_str)
 
-    @aioresponses()
-    async def test_rest_response_properties(self, mocked_api):
-        url = "https://some.url"
+    async def _serve(self, body: str, headers: dict[str, str]) -> str:
+        server = LocalHTTPServer()
+        await server.__aenter__()
+        self.addAsyncCleanup(server.__aexit__, None, None, None)
+        server.get("/", body=body, headers=headers)
+        return server.url("/")
+
+    async def test_rest_response_properties(self):
         body = {"one": 1}
         body_str = json.dumps(body)
         headers = {"content-type": "application/json"}
-        mocked_api.get(url=url, body=body_str, headers=headers)
+        url = await self._serve(body_str, headers)
         aiohttp_client_session = aiohttp.ClientSession()
         aiohttp_response = await aiohttp_client_session.get(url)
 
@@ -34,7 +39,7 @@ class DataTypesTest(IsolatedAsyncioWrapperTestCase):
         self.assertEqual(url, response.url)
         self.assertEqual(RESTMethod.GET, response.method)
         self.assertEqual(200, response.status)
-        self.assertEqual(headers, response.headers)
+        self.assertEqual(headers["content-type"], response.headers["content-type"])
 
         json_ = await response.json()
 
@@ -45,15 +50,13 @@ class DataTypesTest(IsolatedAsyncioWrapperTestCase):
         self.assertEqual(body_str, text)
         await aiohttp_client_session.close()
 
-    @aioresponses()
-    async def test_rest_response_with_test_properties(self, mocked_api):
-        url = "https://some.url"
+    async def test_rest_response_with_test_properties(self):
         data = '{"one": 1}'
         data_str = data.encode("utf-8")
         body = f"{data_str}"
         body_str = json.dumps(body)
         headers = {"content-type": "text/html"}
-        mocked_api.get(url=url, body=body_str, headers=headers)
+        url = await self._serve(body_str, headers)
         aiohttp_client_session = aiohttp.ClientSession()
         aiohttp_response = await aiohttp_client_session.get(url)
 
@@ -62,19 +65,17 @@ class DataTypesTest(IsolatedAsyncioWrapperTestCase):
         self.assertEqual(url, response.url)
         self.assertEqual(RESTMethod.GET, response.method)
         self.assertEqual(200, response.status)
-        self.assertEqual(headers, response.headers)
+        self.assertEqual(headers["content-type"], response.headers["content-type"])
 
         json_ = await response.json()
 
         self.assertEqual(body, json_)
 
-    @aioresponses()
-    async def test_rest_response_repr(self, mocked_api):
-        url = "https://some.url"
+    async def test_rest_response_repr(self):
         body = {"one": 1}
         body_str = json.dumps(body)
         headers = {"content-type": "application/json"}
-        mocked_api.get(url=url, body=body_str, headers=headers)
+        url = await self._serve(body_str, headers)
         aiohttp_client_session = aiohttp.ClientSession()
         aiohttp_response = await aiohttp_client_session.get(url)
 
@@ -86,13 +87,11 @@ class DataTypesTest(IsolatedAsyncioWrapperTestCase):
         self.assertEqual(expected, actual)
         await aiohttp_client_session.close()
 
-    @aioresponses()
-    async def test_rest_response_plain_text_returns_as_string(self, mocked_api):
+    async def test_rest_response_plain_text_returns_as_string(self):
         """Test that plain text responses that can't be parsed as JSON return as strings"""
-        url = "https://some.url"
         body = "pong"  # Plain text response
         headers = {"content-type": "text/plain"}
-        mocked_api.get(url=url, body=body, headers=headers)
+        url = await self._serve(body, headers)
         aiohttp_client_session = aiohttp.ClientSession()
         aiohttp_response = await aiohttp_client_session.get(url)
 
@@ -104,14 +103,12 @@ class DataTypesTest(IsolatedAsyncioWrapperTestCase):
         self.assertEqual(body, result)
         await aiohttp_client_session.close()
 
-    @aioresponses()
-    async def test_rest_response_plain_text_with_valid_json_returns_parsed(self, mocked_api):
+    async def test_rest_response_plain_text_with_valid_json_returns_parsed(self):
         """Test that plain text responses containing valid JSON are parsed"""
-        url = "https://some.url"
         body_dict = {"status": "ok"}
         body = json.dumps(body_dict)  # Valid JSON in plain text
         headers = {"content-type": "text/plain"}
-        mocked_api.get(url=url, body=body, headers=headers)
+        url = await self._serve(body, headers)
         aiohttp_client_session = aiohttp.ClientSession()
         aiohttp_response = await aiohttp_client_session.get(url)
 
