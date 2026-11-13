@@ -1,11 +1,22 @@
 import json
 import unittest
+from collections.abc import Mapping
 
 import aiohttp
 
 from tests._helpers.isolated_asyncio_wrapper_test_case import IsolatedAsyncioWrapperTestCase
 from tests._helpers.local_http_server import LocalHTTPServer
 from web_assistant.connections.data_types import EndpointRESTRequest, RESTMethod, RESTResponse
+
+
+def _assert_headers_subset(expected: dict[str, str], actual: Mapping[str, str]) -> None:
+    """Every expected header must be present with the same value (keys case-insensitive)."""
+    actual_lower = {key.lower(): value for key, value in actual.items()}
+    for key, value in expected.items():
+        assert key.lower() in actual_lower, f"missing header {key!r} in {dict(actual)}"
+        assert actual_lower[key.lower()] == value, (
+            f"header {key!r}: expected {value!r}, got {actual_lower[key.lower()]!r}"
+        )
 
 
 class DataTypesTest(IsolatedAsyncioWrapperTestCase):
@@ -39,7 +50,7 @@ class DataTypesTest(IsolatedAsyncioWrapperTestCase):
         self.assertEqual(url, response.url)
         self.assertEqual(RESTMethod.GET, response.method)
         self.assertEqual(200, response.status)
-        self.assertEqual(headers["content-type"], response.headers["content-type"])
+        _assert_headers_subset(headers, response.headers)
 
         json_ = await response.json()
 
@@ -65,7 +76,7 @@ class DataTypesTest(IsolatedAsyncioWrapperTestCase):
         self.assertEqual(url, response.url)
         self.assertEqual(RESTMethod.GET, response.method)
         self.assertEqual(200, response.status)
-        self.assertEqual(headers["content-type"], response.headers["content-type"])
+        _assert_headers_subset(headers, response.headers)
 
         json_ = await response.json()
 

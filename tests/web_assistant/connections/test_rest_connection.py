@@ -36,4 +36,5 @@ class RESTConnectionTest(IsolatedAsyncioWrapperTestCase):
         j = await ret.json()
 
         self.assertEqual(resp, j)
+        server.assert_called("GET", "/url")
         await client_session.close()
