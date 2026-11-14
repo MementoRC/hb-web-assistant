@@ -10,11 +10,11 @@ def test_import_succeeds() -> None:
 
 
 def test_version_is_correct() -> None:
-    """Package version must be 0.1.0 for PR 1 scaffold."""
-    assert __version__ == "0.1.0"
+    """Package version must be 0.1.3."""
+    assert __version__ == "0.1.3"
 
 
 def test_version_attribute_on_module() -> None:
     """__version__ must be accessible directly on the top-level module."""
     assert hasattr(web_assistant, "__version__")
-    assert web_assistant.__version__ == "0.1.0"
+    assert web_assistant.__version__ == "0.1.3"
