@@ -27,6 +27,7 @@ jobs:
       id-token: write
     secrets: inherit  # pragma: allowlist secret
     with:
+      codeql: true
       pixi-environment: "ci"
       python-versions: '["3.12"]'
       os-matrix: '["ubuntu-latest"]'
