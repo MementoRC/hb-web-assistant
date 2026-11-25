@@ -13,7 +13,7 @@ def test_import_succeeds() -> None:
 
 def test_version_is_correct() -> None:
     """Package version must be a semantic version string."""
-    assert re.match(r"^\d+\.\d+\.\d+", __version__)
+    assert re.fullmatch(r"\d+\.\d+\.\d+", __version__)
 
 
 def test_version_attribute_on_module() -> None:
