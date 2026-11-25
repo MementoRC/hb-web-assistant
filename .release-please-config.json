@@ -1,0 +1,16 @@
+{
+  "$schema": "https://raw.githubusercontent.com/googleapis/release-please/main/schemas/config.json",
+  "bootstrap-sha": "5e213a1fdbb79ef0ab3b6619d9b4f229641ace34",
+  "packages": {
+    ".": {
+      "release-type": "python",
+      "package-name": "hb-web-assistant",
+      "include-component-in-tag": false,
+      "bump-minor-pre-major": true,
+      "bump-patch-for-minor-pre-major": true,
+      "extra-files": [
+        "web_assistant/__about__.py"
+      ]
+    }
+  }
+}

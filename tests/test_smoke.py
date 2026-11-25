@@ -1,5 +1,7 @@
 """Smoke test: verify the package can be imported and reports the expected version."""
 
+import re
+
 import web_assistant
 from web_assistant import __version__
 
@@ -10,11 +12,11 @@ def test_import_succeeds() -> None:
 
 
 def test_version_is_correct() -> None:
-    """Package version must be 0.1.3."""
-    assert __version__ == "0.1.3"
+    """Package version must be a semantic version string."""
+    assert re.fullmatch(r"\d+\.\d+\.\d+", __version__)
 
 
 def test_version_attribute_on_module() -> None:
     """__version__ must be accessible directly on the top-level module."""
     assert hasattr(web_assistant, "__version__")
-    assert web_assistant.__version__ == "0.1.3"
+    assert web_assistant.__version__ == __version__
